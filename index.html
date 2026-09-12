@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aurelia Aesthetics — Quiet, considered aesthetics in Shoreditch</title>
+<meta name="description" content="Doctor-led aesthetic treatments in Shoreditch, London. Wrinkle relaxing, dermal filler, skin health. Book online in under a minute.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- ============ NAV ============ -->
+<header class="nav" id="nav">
+  <a class="nav__brand" href="#top">
+    <span data-clinic="shortName">Aurelia</span>
+    <span data-clinic="location">Shoreditch, London</span>
+  </a>
+  <nav class="nav__links" id="navLinks">
+    <a href="#about">About</a>
+    <a href="#treatments">Treatments</a>
+    <a href="#results">Results</a>
+    <a href="#reviews">Reviews</a>
+    <a href="#aftercare">Aftercare</a>
+    <a href="#visit">Visit</a>
+    <button class="btn btn--solid nav__cta" data-book>Book</button>
+  </nav>
+  <button class="nav__burger" id="burger" aria-label="Menu" aria-expanded="false">
+    <span></span><span></span><span></span>
+  </button>
+</header>
+
+<!-- ============ HERO ============ -->
+<section class="hero" id="top">
+  <div class="hero__text reveal">
+    <p class="eyebrow">Doctor-led · Shoreditch</p>
+    <h1>Look like <em>yourself</em>, on a good day.</h1>
+    <p class="lede" data-clinic="strapline">Subtle results from a practitioner who says no more often than yes.</p>
+    <div class="hero__actions">
+      <button class="btn btn--solid" data-book>Book an appointment</button>
+      <a class="btn btn--ghost" href="#treatments">See treatments &amp; prices</a>
+    </div>
+  </div>
+
+  <div class="hero__media reveal">
+    <img data-img="images.hero" alt="" onerror="this.remove()">
+  </div>
+
+  <div class="promises reveal">
+    <div class="promise">
+      <div class="promise__n">01</div>
+      <h4>Consultation first</h4>
+      <p>Every new client starts with a conversation, not a needle. It's free, and there's no obligation to book anything.</p>
+    </div>
+    <div class="promise">
+      <div class="promise__n">02</div>
+      <h4>Honest answers</h4>
+      <p>If a treatment won't get you where you want to go, you'll be told. Roughly one in five consultations ends in a no.</p>
+    </div>
+    <div class="promise">
+      <div class="promise__n">03</div>
+      <h4>Looked after afterwards</h4>
+      <p>Prep notes before, aftercare after, and a two-week review built into every first treatment.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ABOUT ============ -->
+<section class="section" id="about">
+  <div class="wrap">
+    <div class="split">
+      <div class="split__media reveal">
+        <img data-img="images.practitioner" alt="" onerror="this.remove()">
+      </div>
+      <div class="reveal">
+        <p class="eyebrow">The practitioner</p>
+        <h2 data-clinic="practitioner.name">Dr. Elena Marsh</h2>
+        <p class="muted" style="letter-spacing:.14em;text-transform:uppercase;font-size:.7rem;margin:.9rem 0 1.6rem"
+           data-clinic="practitioner.credentials">MBBS · GMC Registered · Level 7 Aesthetics</p>
+        <p class="lede" data-clinic="practitioner.bio"></p>
+        <div class="stats">
+          <div class="stat">
+            <div class="stat__v" data-clinic="practitioner.yearsExperience">11</div>
+            <div class="stat__l">Years practising</div>
+          </div>
+          <div class="stat">
+            <div class="stat__v" data-clinic="practitioner.treatmentsPerformed">4,000+</div>
+            <div class="stat__l">Treatments</div>
+          </div>
+          <div class="stat">
+            <div class="stat__v" data-clinic="reviews.rating">4.9</div>
+            <div class="stat__l">Average rating</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ TREATMENTS ============ -->
+<section class="section" id="treatments" style="background:var(--white);border-block:1px solid var(--line)">
+  <div class="wrap">
+    <div class="reveal">
+      <p class="eyebrow">Treatments</p>
+      <h2>Everything, with the price next to it.</h2>
+      <p class="lede" style="margin-top:1.2rem">No packages you have to ask about. Prices below are what you pay in clinic.
+        Not sure where to start? Book a consultation — it costs nothing.</p>
+    </div>
+
+    <div class="filters reveal" id="filters"></div>
+    <div class="menu reveal" id="menu"></div>
+
+    <p class="muted reveal" style="margin-top:2rem;font-size:.88rem" data-clinic="policy.payment"></p>
+  </div>
+</section>
+
+<!-- ============ RESULTS ============ -->
+<section class="section" id="results">
+  <div class="wrap">
+    <div class="reveal" style="margin-bottom:3rem">
+      <p class="eyebrow">Results</p>
+      <h2 id="galleryTitle">Before and after, unretouched.</h2>
+      <p class="lede" style="margin-top:1.2rem" id="galleryLede">Same lighting, same angle, same camera. Shared with permission.</p>
+    </div>
+    <div class="gallery reveal" id="gallery"></div>
+  </div>
+</section>
+
+<!-- ============ REVIEWS ============ -->
+<section class="section reviews-band" id="reviews">
+  <div class="wrap">
+    <div class="reveal" style="margin-bottom:3rem">
+      <p class="eyebrow">In their words</p>
+      <h2>What clients say.</h2>
+    </div>
+    <div class="reviews reveal">
+      <blockquote class="review">
+        <div class="review__stars">★★★★★</div>
+        <p class="review__q">"She talked me out of the treatment I came in for and suggested something cheaper. I've been going back for three years."</p>
+        <cite class="review__by">Hannah R. · Google</cite>
+      </blockquote>
+      <blockquote class="review">
+        <div class="review__stars">★★★★★</div>
+        <p class="review__q">"Nobody has told me I look like I've had anything done. Three people have asked if I've been on holiday."</p>
+        <cite class="review__by">Priya S. · Google</cite>
+      </blockquote>
+      <blockquote class="review">
+        <div class="review__stars">★★★★★</div>
+        <p class="review__q">"The reminders and aftercare emails made me feel properly looked after. I knew exactly what to expect at every point."</p>
+        <cite class="review__by">Marcus D. · Google</cite>
+      </blockquote>
+    </div>
+    <div class="rating-summary reveal">
+      <strong data-clinic="reviews.rating">4.9</strong>
+      <span class="muted">average from <span data-clinic="reviews.count">187</span> Google reviews</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============ AFTERCARE ============ -->
+<section class="section" id="aftercare">
+  <div class="wrap">
+    <div class="reveal" style="margin-bottom:2.5rem">
+      <p class="eyebrow">Aftercare</p>
+      <h2>What to do before and after.</h2>
+      <p class="lede" style="margin-top:1.2rem">You'll get these by email automatically — before your appointment and again
+        the evening after. They're here too, so you can check any time.</p>
+    </div>
+    <div class="acc reveal" id="aftercareAcc"></div>
+  </div>
+</section>
+
+<!-- ============ VISIT ============ -->
+<section class="section" id="visit" style="background:var(--white);border-top:1px solid var(--line)">
+  <div class="wrap">
+    <div class="contact-grid">
+      <div class="reveal">
+        <p class="eyebrow">Visit</p>
+        <h2>Come and see us.</h2>
+        <dl class="info-rows">
+          <div class="info-row">
+            <dt>Address</dt>
+            <dd><a data-clinic-href="contact.mapsUrl" target="_blank" rel="noopener">
+              <span data-clinic="contact.address"></span>, <span data-clinic="contact.city"></span>
+              <span data-clinic="contact.postcode"></span></a></dd>
+          </div>
+          <div class="info-row">
+            <dt>Phone</dt>
+            <dd><a data-clinic-tel="contact.phone"><span data-clinic="contact.phone"></span></a></dd>
+          </div>
+          <div class="info-row">
+            <dt>Email</dt>
+            <dd><a data-clinic-mailto="contact.email"><span data-clinic="contact.email"></span></a></dd>
+          </div>
+          <div class="info-row">
+            <dt>WhatsApp</dt>
+            <dd><a data-whatsapp target="_blank" rel="noopener">Message the clinic</a></dd>
+          </div>
+        </dl>
+        <button class="btn btn--solid" data-book style="margin-top:2rem">Book an appointment</button>
+      </div>
+
+      <div class="reveal">
+        <p class="eyebrow">Opening hours</p>
+        <div class="hours-list" id="hoursList"></div>
+        <div class="notice" style="margin-top:2.25rem" data-clinic="policy.cancellation"></div>
+        <div class="notice" data-clinic="policy.consultation"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FOOTER ============ -->
+<footer class="foot">
+  <div class="wrap">
+    <div class="foot__top">
+      <div>
+        <div class="foot__brand" data-clinic="name">Aurelia Aesthetics</div>
+        <p class="foot__note" data-clinic="tagline">Quiet, considered aesthetics</p>
+      </div>
+      <div class="foot__links">
+        <a href="#treatments">Treatments</a>
+        <a href="#aftercare">Aftercare</a>
+        <a href="#visit">Visit</a>
+        <a data-clinic-href="social.instagram" target="_blank" rel="noopener">Instagram</a>
+      </div>
+    </div>
+    <div class="foot__bottom">
+      <span>&copy; <span id="yr"></span> <span data-clinic="name"></span>. All rights reserved.</span>
+      <span>Site &amp; booking system by SAL Digital</span>
+    </div>
+  </div>
+</footer>
+
+<!-- ============ WHATSAPP CHAT WIDGET ============ -->
+<div class="chat" id="chat">
+  <div class="chat__card" id="chatCard" role="dialog" aria-label="Chat on WhatsApp">
+    <div class="chat__head">
+      <div>
+        <div class="chat__name" data-clinic="name">Aurelia Aesthetics</div>
+        <div class="chat__reply" data-clinic="chat.replyTime">Typically replies within minutes</div>
+      </div>
+      <button class="chat__x" id="chatClose" aria-label="Close chat">&times;</button>
+    </div>
+    <div class="chat__body">
+      <div class="chat__bubble" id="chatBubble">Hi 👋 Anything you'd like to ask before booking?</div>
+    </div>
+    <div class="chat__foot">
+      <a class="chat__go" id="chatGo" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.47 14.38c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.96-.94 1.16-.17.2-.35.22-.64.08-.3-.15-1.25-.46-2.39-1.47-.88-.79-1.48-1.76-1.65-2.06-.17-.3-.02-.46.13-.6.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.08-.15-.67-1.61-.92-2.2-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.79.37-.27.3-1.04 1.01-1.04 2.47s1.07 2.87 1.22 3.07c.15.2 2.1 3.2 5.08 4.49.71.3 1.26.49 1.69.63.71.22 1.36.19 1.87.12.57-.09 1.76-.72 2-1.41.25-.7.25-1.29.17-1.42-.07-.13-.27-.2-.57-.35M12.04 21.5h-.01a9.4 9.4 0 0 1-4.8-1.32l-.34-.2-3.57.93.96-3.47-.23-.36a9.38 9.38 0 0 1-1.44-5.01c0-5.18 4.23-9.4 9.44-9.4a9.37 9.37 0 0 1 6.67 2.76 9.32 9.32 0 0 1 2.76 6.65c0 5.18-4.23 9.4-9.44 9.4m8.03-17.43A11.28 11.28 0 0 0 12.04 .75C5.78.75.69 5.83.69 12.07c0 1.99.52 3.94 1.51 5.65L.6 23.25l5.67-1.48a11.35 11.35 0 0 0 5.77 1.57h.01c6.25 0 11.34-5.08 11.34-11.32 0-3.03-1.18-5.87-3.32-8.01"/></svg>
+        WhatsApp us
+      </a>
+      <div class="chat__status"><i></i><span data-clinic="chat.onlineLabel">Online</span></div>
+    </div>
+  </div>
+
+  <button class="chat__fab" id="chatFab" aria-label="Chat on WhatsApp" aria-expanded="false">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.47 14.38c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.96-.94 1.16-.17.2-.35.22-.64.08-.3-.15-1.25-.46-2.39-1.47-.88-.79-1.48-1.76-1.65-2.06-.17-.3-.02-.46.13-.6.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.08-.15-.67-1.61-.92-2.2-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.79.37-.27.3-1.04 1.01-1.04 2.47s1.07 2.87 1.22 3.07c.15.2 2.1 3.2 5.08 4.49.71.3 1.26.49 1.69.63.71.22 1.36.19 1.87.12.57-.09 1.76-.72 2-1.41.25-.7.25-1.29.17-1.42-.07-.13-.27-.2-.57-.35M12.04 21.5h-.01a9.4 9.4 0 0 1-4.8-1.32l-.34-.2-3.57.93.96-3.47-.23-.36a9.38 9.38 0 0 1-1.44-5.01c0-5.18 4.23-9.4 9.44-9.4a9.37 9.37 0 0 1 6.67 2.76 9.32 9.32 0 0 1 2.76 6.65c0 5.18-4.23 9.4-9.44 9.4m8.03-17.43A11.28 11.28 0 0 0 12.04 .75C5.78.75.69 5.83.69 12.07c0 1.99.52 3.94 1.51 5.65L.6 23.25l5.67-1.48a11.35 11.35 0 0 0 5.77 1.57h.01c6.25 0 11.34-5.08 11.34-11.32 0-3.03-1.18-5.87-3.32-8.01"/></svg>
+    <span class="chat__ping"></span>
+  </button>
+</div>
+
+<!-- ============ BOOKING MODAL ============ -->
+<div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+  <div class="sheet">
+    <div class="sheet__head">
+      <div>
+        <div class="sheet__title" id="sheetTitle">Book an appointment</div>
+        <div class="sheet__sub" id="sheetSub">Step 1 of 4 — Choose a treatment</div>
+      </div>
+      <button class="sheet__x" id="closeModal" aria-label="Close">&times;</button>
+    </div>
+
+    <div class="steps" id="steps">
+      <div class="step-dot is-done"></div><div class="step-dot"></div>
+      <div class="step-dot"></div><div class="step-dot"></div>
+    </div>
+
+    <div class="sheet__body">
+      <!-- 1 · treatment -->
+      <div class="pane is-active" data-pane="1">
+        <div class="pick" id="pickList"></div>
+      </div>
+
+      <!-- 2 · date -->
+      <div class="pane" data-pane="2">
+        <div class="cal__bar">
+          <div class="cal__mo" id="calMonth"></div>
+          <div class="cal__nav">
+            <button id="calPrev" aria-label="Previous month">&lsaquo;</button>
+            <button id="calNext" aria-label="Next month">&rsaquo;</button>
+          </div>
+        </div>
+        <div class="cal__grid" id="calGrid"></div>
+        <p class="muted" style="font-size:.8rem;margin-top:1.1rem">
+          Greyed-out dates are outside opening hours or fully booked.
+        </p>
+      </div>
+
+      <!-- 3 · time -->
+      <div class="pane" data-pane="3">
+        <div id="slotArea"></div>
+      </div>
+
+      <!-- 4 · details -->
+      <div class="pane" data-pane="4">
+        <div class="recap" id="recap"></div>
+        <form id="bookForm" novalidate>
+          <div class="field-row">
+            <div class="field">
+              <label for="fName">First name</label>
+              <input id="fName" name="firstName" required autocomplete="given-name">
+            </div>
+            <div class="field">
+              <label for="lName">Last name</label>
+              <input id="lName" name="lastName" required autocomplete="family-name">
+            </div>
+          </div>
+          <div class="field">
+            <label for="fEmail">Email</label>
+            <input id="fEmail" name="email" type="email" required autocomplete="email">
+          </div>
+          <div class="field">
+            <label for="fPhone">Mobile</label>
+            <input id="fPhone" name="phone" type="tel" required autocomplete="tel" placeholder="07…">
+          </div>
+          <div class="field">
+            <label for="fNotes">Anything I should know? (optional)</label>
+            <textarea id="fNotes" name="notes" placeholder="Previous treatments, concerns, medication…"></textarea>
+          </div>
+          <label class="check">
+            <input type="checkbox" id="fConsent" required>
+            <span>I consent to <span data-clinic="name"></span> storing my details to manage my appointment
+              and to contacting me about it by email and SMS. I understand a medical history form must be
+              completed before treatment.</span>
+          </label>
+          <div class="err" id="formErr" hidden></div>
+        </form>
+      </div>
+
+      <!-- 5 · done -->
+      <div class="pane" data-pane="5">
+        <div class="done">
+          <div class="done__mark">&#10003;</div>
+          <h3>You're booked in.</h3>
+          <p class="muted" id="doneLine"></p>
+          <div class="next-steps">
+            <p class="care-title">What happens next</p>
+            <ul class="care-list">
+              <li>A confirmation email is on its way, with the address and what to expect.</li>
+              <li>It contains your <strong>medical history &amp; consent form</strong> — please complete it before you come in.</li>
+              <li>You'll get a reminder 48 hours and 24 hours before, with prep instructions.</li>
+              <li>Need to change anything? Just reply to that email or message on WhatsApp.</li>
+            </ul>
+            <a class="btn btn--bronze btn--block" id="formLink" target="_blank" rel="noopener"
+               style="margin-top:1.5rem">Complete medical history form</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sheet__foot" id="sheetFoot">
+      <button class="btn btn--ghost" id="btnBack" style="visibility:hidden">Back</button>
+      <button class="btn btn--solid" id="btnNext" disabled>Continue</button>
+    </div>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script src="treatments.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
