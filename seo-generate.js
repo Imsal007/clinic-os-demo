@@ -68,7 +68,7 @@ const dur = m => m < 60 ? `${m} minutes`
 /* ---------- page template ---------- */
 function page(t, area) {
   const title = `${t.name} in ${area.name} | ${CLINIC.name}`;
-  const url   = `${BASE}/${SEO.outDir}/${slug(t.name)}-${slug(area.name)}/`;
+  const url   = `${BASE}/${SEO.outDir}/${slug(t.name)}-${slug(area.name)}.html`;
   const desc  = `${t.name} in ${area.name} from ${money(t)}. ${t.summary} ` +
                 `Doctor-led, ${dur(t.duration)}, prices published. Book online.`.slice(0, 300);
 
@@ -114,21 +114,21 @@ function page(t, area) {
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Chakra+Petch:wght@600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../../styles.css">
+<link rel="stylesheet" href="../styles.css">
 <script type="application/ld+json">${JSON.stringify(jsonld)}</script>
 </head>
 <body>
 
 <header class="nav is-stuck" id="nav">
-  <a class="nav__brand" href="../../">
+  <a class="nav__brand" href="../index.html">
     <span class="bn">${esc(CLINIC.shortName)}</span>
     <span class="bl">${esc(CLINIC.location)}</span>
   </a>
   <nav class="nav__links">
-    <a href="../../#treatments">Treatments</a>
-    <a href="../../#aftercare">Aftercare</a>
-    <a href="../../#visit">Visit</a>
-    <a class="btn btn--gold nav__cta" href="../../#treatments">Book</a>
+    <a href="../index.html#treatments">Treatments</a>
+    <a href="../index.html#aftercare">Aftercare</a>
+    <a href="../index.html#visit">Visit</a>
+    <a class="btn btn--gold nav__cta" href="../index.html#treatments">Book</a>
   </nav>
 </header>
 
@@ -153,7 +153,7 @@ function page(t, area) {
       </div>` : ''}
     </div>
 
-    <p style="margin-top:2.5rem"><a class="btn btn--gold" href="../../#treatments">Book ${esc(t.name.toLowerCase())}</a></p>
+    <p style="margin-top:2.5rem"><a class="btn btn--gold" href="../index.html#treatments">Book ${esc(t.name.toLowerCase())}</a></p>
   </div>
 </section>
 
@@ -189,7 +189,7 @@ function page(t, area) {
     </dl>
 
     <p style="margin-top:2.25rem">
-      <a class="btn btn--gold" href="../../#treatments">See all treatments &amp; prices</a>
+      <a class="btn btn--gold" href="../index.html#treatments">See all treatments &amp; prices</a>
     </p>
   </div>
 </section>
@@ -221,17 +221,16 @@ if (!targets.length || !areas.length) {
 const written = [];
 for (const t of targets) {
   for (const a of areas) {
-    const dir = path.join(OUT, `${slug(t.name)}-${slug(a.name)}`);
-    const rel = `${SEO.outDir}/${slug(t.name)}-${slug(a.name)}/index.html`;
-    written.push(rel);
+    const file = `${slug(t.name)}-${slug(a.name)}.html`;
+    written.push(`${SEO.outDir}/${file}`);
     if (DRY) continue;
-    fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(path.join(dir, 'index.html'), page(t, a));
+    fs.mkdirSync(OUT, { recursive: true });
+    fs.writeFileSync(path.join(OUT, file), page(t, a));
   }
 }
 
 /* ---------- sitemap + robots ---------- */
-const urls = [`${BASE}/`, ...written.map(r => `${BASE}/${r.replace(/index\.html$/, '')}`)];
+const urls = [`${BASE}/`, ...written.map(r => `${BASE}/${r}`)];
 const today = new Date().toISOString().slice(0, 10);
 const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
