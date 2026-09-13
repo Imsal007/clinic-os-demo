@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://imsal007.github.io/clinic-os-demo/sitemap.xml
