@@ -325,6 +325,27 @@ em.hl { font-style: italic; color: var(--gold2); }   /* solid, never gradient-cl
 .trust__card p { margin: 0; color: var(--muted); font-size: .95rem; }
 @media (max-width: 900px) { .trust { grid-template-columns: 1fr; } }
 
+/* ---------- AREA LINKS ---------- */
+.areas { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+.area {
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: var(--r); padding: 1.6rem 1.5rem;
+  transition: border-color .35s var(--ease);
+}
+.area:hover { border-color: var(--line2); }
+.area__n {
+  font-family: var(--serif); font-size: 1.3rem; font-weight: 500;
+  margin: 0 0 1rem; padding-bottom: .85rem; border-bottom: 1px solid var(--line);
+}
+.area__l { list-style: none; margin: 0; padding: 0; display: grid; gap: .55rem; }
+.area__l a {
+  font-size: .9rem; color: var(--muted); text-decoration: none;
+  transition: color .3s var(--ease);
+}
+.area__l a:hover { color: var(--gold2); }
+@media (max-width: 900px) { .areas { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 520px) { .areas { grid-template-columns: 1fr; } }
+
 /* ---------- AFTERCARE ACCORDION ---------- */
 .acc { border-top: 1px solid var(--line); }
 .acc__row { border-bottom: 1px solid var(--line); }

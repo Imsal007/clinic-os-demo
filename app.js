@@ -100,6 +100,35 @@ function renderTrust() {
 }
 
 /* ============================================================
+   2d · AREA LINKS
+   Internal links into the programmatic SEO pages. Without these
+   the generated pages are orphans — indexable via sitemap, but
+   with no internal authority flowing to them, so they rank badly.
+   Built from the same CLINIC.seo block the generator reads, so
+   the two can never drift apart.
+   ============================================================ */
+const seoSlug = s => s.toLowerCase()
+  .replace(/&/g, " and ").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+
+function renderAreas() {
+  const box = $("#areaLinks"); if (!box) return;
+  const seo = CLINIC.seo;
+  if (!seo || !seo.enabled || !seo.areas || !seo.areas.length) {
+    box.closest("section").remove(); return;
+  }
+  const treats = (seo.treatments || [])
+    .map(getTreatment).filter(Boolean);
+
+  box.innerHTML = seo.areas.map(a => `
+    <div class="area">
+      <h3 class="area__n">${a.name}</h3>
+      <ul class="area__l">
+        ${treats.map(t => `<li><a href="${seo.outDir}/${seoSlug(t.name)}-${seoSlug(a.name)}.html">${t.name}</a></li>`).join("")}
+      </ul>
+    </div>`).join("");
+}
+
+/* ============================================================
    3 · TREATMENT MENU
    ============================================================ */
 let activeFilter = "all";
@@ -568,6 +597,7 @@ hydrate();
 renderHours();
 renderGallery();
 renderTrust();
+renderAreas();
 renderFilters();
 renderMenu();
 renderAftercare();

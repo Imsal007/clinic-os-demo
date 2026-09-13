@@ -95,6 +95,17 @@ function page(t, area) {
     }
   };
 
+  const siblings = (tt, cur) => {
+    const others = SEO.areas.filter(a => a.name !== cur.name);
+    if (!others.length) return '';
+    return `<div style="margin-top:3rem;padding-top:2rem;border-top:1px solid var(--line)">
+      <p class="care-title">${esc(tt.name)} elsewhere in east London</p>
+      <ul class="area__l" style="display:flex;flex-wrap:wrap;gap:1.5rem">
+        ${others.map(a => `<li><a href="${slug(tt.name)}-${slug(a.name)}.html">${esc(a.name)}</a></li>`).join('')}
+      </ul>
+    </div>`;
+  };
+
   const list = arr => arr.length
     ? `<ul class="care-list">${arr.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : '';
 
@@ -191,6 +202,8 @@ function page(t, area) {
     <p style="margin-top:2.25rem">
       <a class="btn btn--gold" href="../index.html#treatments">See all treatments &amp; prices</a>
     </p>
+
+    ${siblings(t, area)}
   </div>
 </section>
 
