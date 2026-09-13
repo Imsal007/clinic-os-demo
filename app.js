@@ -85,6 +85,21 @@ function renderGallery() {
 }
 
 /* ============================================================
+   2c · TRUST — structural promises, never invented social proof
+   ============================================================ */
+function renderTrust() {
+  const box = $("#trust"); if (!box) return;
+  const list = CLINIC.trust || [];
+  if (!list.length) { box.closest("section").remove(); return; }
+  box.innerHTML = list.map(t => `
+    <article class="trust__card">
+      <div class="trust__k">${t.key}</div>
+      <h3>${t.title}</h3>
+      <p>${t.body}</p>
+    </article>`).join("");
+}
+
+/* ============================================================
    3 · TREATMENT MENU
    ============================================================ */
 let activeFilter = "all";
@@ -552,6 +567,7 @@ function chatLockTreatment(name) { CHAT.locked = name; paintChat(); }
 hydrate();
 renderHours();
 renderGallery();
+renderTrust();
 renderFilters();
 renderMenu();
 renderAftercare();
