@@ -203,6 +203,20 @@ function doGet(e) {
     if (action === 'slots') {
       return json({ ok: true, slots: availableSlots(e.parameter.date, Number(e.parameter.duration || 30)) });
     }
+    /* A whole month of free-slot counts in one request, so the calendar
+       can mark full days without asking about each one separately. */
+    if (action === 'month') {
+      const dur = Number(e.parameter.duration || 45);
+      const from = new Date(e.parameter.from + 'T00:00:00');
+      const to   = new Date(e.parameter.to   + 'T00:00:00');
+      const counts = {};
+      for (let d = new Date(from); d <= to; d.setDate(d.getDate() + 1)) {
+        const ds = Utilities.formatDate(d, CONFIG.timezone, 'yyyy-MM-dd');
+        counts[ds] = CONFIG.hours[d.getDay()] ? availableSlots(ds, dur).length : 0;
+      }
+      return json({ ok: true, counts: counts });
+    }
+
     if (action === 'claim') {
       const r = claimSlot({ token: e.parameter.token });
       return HtmlService.createHtmlOutput(shell(

@@ -162,19 +162,82 @@ paid for the build.
 
 ---
 
+## What it runs on
+
+The automations are not a separate service. They are Google Apps Script,
+which is the scripting layer built into a Google account, and they use that
+account's own Gmail and Calendar. So a clinic needs exactly three things, all
+of which most clinics already have:
+
+| | What it does here |
+|---|---|
+| **Google account** | Owns everything below |
+| **Gmail** | Sends every confirmation, reminder, aftercare note, waitlist offer and owner alert |
+| **Google Calendar** | The diary. The website reads availability from it live, so a slot booked by phone disappears from the site on its own |
+| **Google Sheets** | Bookings, waitlist, leads, stock and the log |
+| **Apps Script** | The engine. Deployed once as a web app; runs on a schedule after that |
+
+`SETUP.md` walks through deploying it. It is a one-time job.
+
+---
+
 ## Cost
+
+### The software
 
 | | Clinic OS | Fresha | Pabau |
 |---|---|---|---|
 | Monthly | £0 | £14.95 + 20% marketplace commission | ~£199 |
 | Hosting | £0 (GitHub Pages) | — | — |
-| Booking limit | Google Apps Script quotas (~100 emails/day on a free account) | — | — |
 
 On a £300 treatment, Fresha's marketplace commission is £60. Here it is £0.
 
-**The quota matters now.** With fifteen automations running, a busy clinic can
-approach the free Gmail limit of roughly 100 emails a day. A Workspace account
-raises it to 1,500. Check `Log` if messages stop.
+### Does the clinic have to pay Google?
+
+**Almost certainly not.** Apps Script on a free consumer Gmail account can send
+to roughly **100 recipients a day**. A Google Workspace account raises that to
+about **1,500**.
+
+What that means in practice: every appointment generates around **seven emails**
+across its whole life — confirmation, owner alert, prep, two reminders,
+aftercare, review request. A clinic seeing **ten clients a week** is therefore
+sending roughly **ten emails a day**, which is a tenth of the free limit.
+
+A free account comfortably covers a solo clinic. You would need to be running
+about **fourteen appointments a day, every day** before the free tier became a
+problem, and a clinic at that volume is already paying for Workspace for its own
+reasons.
+
+Two things to watch:
+- The limit counts **recipients**, not messages, and it is a rolling 24 hours.
+- If sending ever stops, the `Log` tab records it. That is the first place to look.
+
+Quotas are Google's and they change. Check the current figures before quoting
+them to a client.
+
+### Text messages
+
+Apps Script **cannot send SMS**. Email is free; text is not. Three routes, in
+the order they usually make sense:
+
+1. **WhatsApp link (free).** What the site already does. The owner alert carries
+   a one-tap WhatsApp link to the client, so the practitioner opens a chat with
+   one thumb. Free, but a person has to press it.
+2. **Twilio or similar, for automated SMS.** Pay per message, typically a few
+   pence per UK text. At ten clients a week and two texts each, that is a small
+   monthly number — but it is a real bill and a card on file, so price it into
+   the retainer rather than absorbing it.
+3. **WhatsApp Business API, for automated WhatsApp.** Priced per conversation
+   rather than per message, and it needs a business verification step. Worth it
+   only once volume justifies the setup.
+
+Per-message pricing moves. Quote from the provider's current price list on the
+day, not from this file.
+
+**Recommendation for a solo clinic:** start on email only. It costs nothing, it
+covers every automation in this repo, and reminders by email plus a WhatsApp
+button solve most no-shows. Add SMS when the clinic can point at no-shows that
+email reminders did not prevent.
 
 ---
 

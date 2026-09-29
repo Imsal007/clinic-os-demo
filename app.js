@@ -223,7 +223,7 @@ function openModal(treatmentId) {
     markPicked();
     B.step = 2;
   }
-  buildCalendar();
+  openCalendar();
   paint();
   modal.classList.add("is-open");
   document.body.style.overflow = "hidden";
@@ -326,7 +326,7 @@ function renderPicker() {
   $$(".pick__opt", box).forEach(b => b.addEventListener("click", () => {
     B.treatment = getTreatment(b.dataset.t);
     B.date = null; B.time = null;
-    markPicked(); buildCalendar();
+    markPicked(); openCalendar();
     chatLockTreatment(B.treatment.name);
     B.step = 2;                       // straight on to the date — Back still available
     paint();
@@ -346,7 +346,70 @@ function dayIsOpen(d) {
   return end >= min && d <= max;
 }
 
-function buildCalendar() {
+/* Availability for a whole month, so the calendar can show which days
+   are free before anybody clicks. Cached per month and duration.
+
+   In demo mode it is computed locally. Against a live backend it is a
+   single request for the month rather than one per day. */
+const MONTH_CACHE = {};
+
+async function monthAvailability(year, month, duration) {
+  const key = `${year}-${month}-${duration}`;
+  if (MONTH_CACHE[key]) return MONTH_CACHE[key];
+
+  const days = new Date(year, month + 1, 0).getDate();
+  const out  = {};
+
+  if (CLINIC.isDemoMode()) {
+    for (let i = 1; i <= days; i++) {
+      const ds = ymd(new Date(year, month, i));
+      out[ds] = demoSlots(ds, duration).length;
+    }
+  } else {
+    const from = ymd(new Date(year, month, 1));
+    const to   = ymd(new Date(year, month, days));
+    try {
+      const url = `${CLINIC.booking.webAppUrl}?action=month&from=${from}&to=${to}&duration=${duration}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      Object.assign(out, data.counts || {});
+    } catch (e) {
+      // If the month lookup fails, fall back to showing every open day
+      // as bookable rather than blocking the calendar entirely.
+      for (let i = 1; i <= days; i++) out[ymd(new Date(year, month, i))] = -1;
+    }
+  }
+
+  MONTH_CACHE[key] = out;
+  return out;
+}
+
+/* Open the calendar on the first month that actually has something in
+   it. Landing on the current month late in that month shows a grid
+   where every day is in the past, which reads as a broken booking
+   form rather than a busy clinic. */
+async function openCalendar() {
+  const duration = B.treatment ? B.treatment.duration : 45;
+  const maxD = new Date(Date.now() + CLINIC.booking.maxDaysAhead * 864e5);
+  const cur = new Date();
+  cur.setDate(1);
+
+  for (let hop = 0; hop < 4; hop++) {
+    if (cur > maxD) break;
+    const counts = await monthAvailability(cur.getFullYear(), cur.getMonth(), duration);
+    const hasFree = Object.keys(counts).some(ds => {
+      const d = new Date(ds + "T00:00:00");
+      return counts[ds] > 0 && dayIsOpen(d);
+    });
+    if (hasFree) break;
+    cur.setMonth(cur.getMonth() + 1);
+  }
+
+  B.cursor = cur;
+  return buildCalendar();
+}
+
+async function buildCalendar() {
   const grid  = $("#calGrid");
   const cur   = B.cursor;
   $("#calMonth").textContent = `${MON[cur.getMonth()]} ${cur.getFullYear()}`;
@@ -355,24 +418,44 @@ function buildCalendar() {
   const days   = new Date(cur.getFullYear(), cur.getMonth() + 1, 0).getDate();
   const offset = (first.getDay() + 6) % 7;              // Monday-first
 
+  const counts = await monthAvailability(cur.getFullYear(), cur.getMonth(),
+                                         B.treatment ? B.treatment.duration : 45);
+
   let html = ["M","T","W","T","F","S","S"].map(d => `<div class="cal__dow">${d}</div>`).join("");
   html += Array(offset).fill('<div class="cal__day is-empty"></div>').join("");
 
   for (let i = 1; i <= days; i++) {
     const d  = new Date(cur.getFullYear(), cur.getMonth(), i);
+    const ds = ymd(d);
     const ok = dayIsOpen(d);
-    const on = B.date === ymd(d);
-    html += `<button class="cal__day ${on ? "is-sel" : ""}" data-d="${ymd(d)}" ${ok ? "" : "disabled"}>${i}</button>`;
+    const on = B.date === ds;
+    const n  = counts[ds];
+    const full = ok && n === 0;
+
+    /* A full day is still clickable — that is the way in to the
+       waitlist. It is just never a surprise. */
+    const cls = ["cal__day"];
+    if (on)   cls.push("is-sel");
+    if (full) cls.push("is-full");
+    else if (ok && n > 0) cls.push("is-free");
+
+    const label = !ok   ? `${i}, closed`
+                : full  ? `${i}, fully booked — join the waitlist`
+                : n > 0 ? `${i}, ${n} appointment${n === 1 ? "" : "s"} free`
+                :         `${i}`;
+
+    html += `<button class="${cls.join(" ")}" data-d="${ds}" aria-label="${label}"
+              ${ok ? "" : "disabled"}>${i}</button>`;
   }
   grid.innerHTML = html;
 
   $$(".cal__day[data-d]:not(:disabled)", grid).forEach(b => b.addEventListener("click", () => {
     B.date = b.dataset.d; B.time = null;
-    buildCalendar(); B.step = 3; loadSlots(); paint();
+    buildCalendar(); B.step = 3; loadSlots(); paint();   // same month, just repaint the selection
   }));
 
   const now = new Date();
-  $("#calPrev").disabled = cur.getFullYear() === now.getFullYear() && cur.getMonth() === now.getMonth();
+  $("#calPrev").disabled = cur.getFullYear() === now.getFullYear() && cur.getMonth() <= now.getMonth();
   const maxD = new Date(Date.now() + CLINIC.booking.maxDaysAhead * 864e5);
   $("#calNext").disabled = cur.getFullYear() === maxD.getFullYear() && cur.getMonth() === maxD.getMonth();
 }
@@ -407,12 +490,13 @@ function demoSlots(dateStr, duration) {
   // Busier the sooner it is, quieter further out — reads like a real diary.
   const daysOut = Math.max(0, Math.round((d - new Date().setHours(0,0,0,0)) / 864e5));
 
-  // The first few open days are full. A sought-after clinic is booked a
-  // week out, and it is what puts the waitlist in front of the visitor
-  // rather than hiding it behind a rare empty day.
-  if (daysOut <= 3) return [];
+  // The next couple of open days are full. A clinic worth booking is
+  // booked a few days out, and it is what puts the waitlist in front of
+  // the visitor. The calendar marks these days as full before anybody
+  // clicks them, so it never reads as a broken booking form.
+  if (daysOut <= 2) return [];
 
-  const freeRate = Math.min(0.78, 0.30 + (daysOut - 3) * 0.045);
+  const freeRate = Math.min(0.78, 0.32 + (daysOut - 2) * 0.045);
 
   for (let m = toMin(h.open); m + duration <= toMin(h.close); m += 30) {
     if (rnd() < freeRate) out.push(toHHMM(m));
@@ -531,7 +615,7 @@ async function submitBooking() {
 
 /* --- nav buttons --- */
 btnNext.addEventListener("click", () => {
-  if (B.step === 1 && B.treatment) { B.step = 2; buildCalendar(); paint(); return; }
+  if (B.step === 1 && B.treatment) { B.step = 2; openCalendar(); paint(); return; }
   if (B.step === 2 && B.date)      { B.step = 3; loadSlots();     paint(); return; }
   if (B.step === 3 && B.time)      { B.step = 4; renderRecap();   paint(); return; }
   if (B.step === 4)                { submitBooking(); }

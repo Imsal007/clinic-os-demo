@@ -599,23 +599,24 @@ h4 { margin: 0; }
 .cal__dow { text-align: center; font-family: var(--mono); font-size: .6rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted2); padding-bottom: .5rem; }
 .cal__day {
   aspect-ratio: 1; display: grid; place-items: center;
-  background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--r);
   font-size: .9rem; color: var(--txt); transition: all .25s var(--ease);
+  position: relative;
 }
 .cal__day:hover:not(:disabled) { border-color: var(--gold); color: var(--gold2); }
 .cal__day:disabled { background: transparent; border-color: transparent; color: var(--muted2); opacity: .35; cursor: not-allowed; }
-.cal__day.is-sel { background: var(--gold); border-color: var(--gold); color: #16110A; font-weight: 600; }
+.cal__day.is-sel { background: var(--gold); border-color: var(--gold); color: var(--on-accent); font-weight: 600; }
 .cal__day.is-empty { background: none; border: 0; }
 
 /* --- slots --- */
 .slots { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: .5rem; }
 .slot {
   padding: .8rem .4rem; background: var(--panel);
-  border: 1px solid var(--line); border-radius: 10px;
+  border: 1px solid var(--line); border-radius: var(--r);
   font-size: .93rem; color: var(--txt); transition: all .25s var(--ease);
 }
 .slot:hover { border-color: var(--gold); color: var(--gold2); }
-.slot.is-sel { background: var(--gold); border-color: var(--gold); color: #16110A; font-weight: 600; }
+.slot.is-sel { background: var(--gold); border-color: var(--gold); color: var(--on-accent); font-weight: 600; }
 .slots-empty { text-align: center; padding: 2.5rem 1rem; color: var(--muted2); }
 
 /* --- form --- */
@@ -939,3 +940,34 @@ h4 { margin: 0; }
   .foot__links a { display: inline-block; min-height: 44px; line-height: 44px; }
   .refill__play { min-height: 46px; width: 100%; }
 }
+
+/* ---------- CALENDAR AVAILABILITY ----------
+   The month knows what is free before anybody clicks a day. A day that
+   is full is still clickable, because that is the way in to the
+   waitlist — it is just never a surprise. */
+.cal__day.is-free::after {
+  content: ""; position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%);
+  width: 4px; height: 4px; border-radius: 50%; background: var(--ok);
+}
+.cal__day.is-full {
+  color: var(--muted2);
+  border-style: dashed;
+  border-color: var(--line2);
+  background: transparent;
+}
+.cal__day.is-full::after {
+  content: ""; position: absolute; bottom: 7px; left: 50%; transform: translateX(-50%);
+  width: 9px; height: 1px; background: var(--muted2);
+}
+.cal__day.is-full:hover { border-color: var(--warn); color: var(--warn); }
+.cal__day.is-full:hover::after { background: var(--warn); }
+.cal__day.is-sel::after { background: var(--on-accent); }
+
+.cal__key {
+  display: flex; flex-wrap: wrap; gap: 1.1rem;
+  margin-top: .9rem;
+  font-family: var(--mono); font-size: .7rem; color: var(--muted);
+}
+.cal__key span { display: inline-flex; align-items: center; gap: .4rem; }
+.cal__key i { width: 5px; height: 5px; border-radius: 50%; background: var(--ok); }
+.cal__key i[data-full] { width: 9px; height: 1px; border-radius: 0; background: var(--muted2); }
