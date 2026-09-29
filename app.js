@@ -606,7 +606,10 @@ async function submitBooking() {
   const pretty = new Date(B.date + "T00:00:00")
     .toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
   $("#doneLine").textContent = `${B.treatment.name} — ${pretty} at ${B.time}`;
-  $("#formLink").href = CLINIC.forms.medicalHistory;
+  /* The demo ships with placeholder form links. Never hand a visitor a
+     button that leads to a dead Google Forms page — on a sales call it
+     is the one thing everybody clicks. */
+  setFormLink();
   $("#sheetTitle").textContent = "Appointment confirmed";
   abandonSent = true;               // confirmed, so never chase it as abandoned
   B.step = 5; paint();
@@ -1035,3 +1038,31 @@ async function joinWaitlist(area, pretty) {
 
 /* Leaving the page with the sheet open is the same as closing it. */
 window.addEventListener("pagehide", captureAbandoned);
+
+/* ------------------------------------------------------------
+   Medical history link.
+
+   Real URL  → a working button.
+   Placeholder or empty → an honest note instead of a dead button,
+   so the demo never 404s in front of a client.
+   ------------------------------------------------------------ */
+function setFormLink() {
+  const el  = $("#formLink");
+  if (!el) return;
+  const url = (CLINIC.forms && CLINIC.forms.medicalHistory) || "";
+  const real = url && !/REPLACE_ME/i.test(url);
+
+  if (real) {
+    el.href = url;
+    el.hidden = false;
+    return;
+  }
+
+  const note = document.createElement("p");
+  note.className = "form-note";
+  note.innerHTML =
+    "<strong>Demo mode.</strong> On a live clinic site this is a button to the clinic's own " +
+    "medical history and consent form, and the same link goes out in the confirmation email. " +
+    "Add it to <code>config.js</code> to switch it on.";
+  el.replaceWith(note);
+}

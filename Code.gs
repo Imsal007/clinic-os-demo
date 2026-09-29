@@ -407,6 +407,16 @@ function bullets(arr) {
 }
 
 function button(label, url) {
+  /* Never post a placeholder into a client's inbox. If a URL has not
+     been filled in yet, the email says so plainly instead of carrying
+     a link that 404s. */
+  if (!url || /REPLACE_ME/i.test(String(url))) {
+    log('CONFIG', 'Placeholder URL suppressed in an email: ' + label);
+    return '<p style="margin:22px 0;padding:12px 14px;border:1px dashed #C9C4BC;' +
+      'font-family:Helvetica,Arial,sans-serif;font-size:13px;color:#6B645C">' +
+      '<strong>' + label + '</strong> — this link has not been set up yet. ' +
+      'Reply to this email and we will send it to you.</p>';
+  }
   return '<p style="margin:22px 0"><a href="' + url + '" style="display:inline-block;background:#211E1B;' +
     'color:#FAF7F3;text-decoration:none;padding:14px 26px;font-family:Helvetica,Arial,sans-serif;' +
     'font-size:12px;letter-spacing:2px;text-transform:uppercase">' + label + '</a></p>';

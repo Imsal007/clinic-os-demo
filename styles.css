@@ -971,3 +971,17 @@ h4 { margin: 0; }
 .cal__key span { display: inline-flex; align-items: center; gap: .4rem; }
 .cal__key i { width: 5px; height: 5px; border-radius: 50%; background: var(--ok); }
 .cal__key i[data-full] { width: 9px; height: 1px; border-radius: 0; background: var(--muted2); }
+
+/* Demo-mode note where a real clinic would have a form button. */
+.form-note {
+  margin: 1.5rem 0 0;
+  padding: .95rem 1.1rem;
+  border: 1px dashed var(--line2);
+  border-radius: var(--r);
+  font-size: .86rem; line-height: 1.6; color: var(--muted);
+}
+.form-note strong { color: var(--txt); font-weight: 500; }
+.form-note code {
+  font-family: var(--mono); font-size: .82em;
+  background: var(--panel2); padding: .1em .35em; border-radius: 2px;
+}
