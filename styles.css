@@ -8,43 +8,77 @@
    ============================================================ */
 
 :root {
-  /* --- SAL brand: surfaces --- */
-  --bg:        #0B0A0A;   /* page */
-  --bg2:       #100E0E;   /* alternating section */
-  --panel:     #171313;   /* cards, raised surfaces */
-  --panel2:    #1E1919;   /* hover / nested */
-  --line:      #2A2422;   /* hairline */
-  --line2:     #3A322E;   /* stronger border */
+  /* ============================================================
+     AURELIA — CLINICAL MONOGRAPH SKIN
+     ------------------------------------------------------------
+     The clinic's own photography is warm, candlelit and dark. The
+     page is therefore pale, cool and quiet, so the photographs are
+     the only warm thing on it — plates in a monograph rather than
+     decoration on a dark field.
 
-  /* --- SAL brand: gold --- */
-  --gold:      #C9A24A;   /* primary */
-  --gold2:     #E2C28B;   /* bright — emphasis, prices */
-  --gold3:     #8C6E2E;   /* deep — gradient ends */
+     This is a re-skin of the SAL token system. Every value below
+     can be swapped for another clinic without touching a rule.
+     ============================================================ */
 
-  /* --- Beauty niche: one secondary accent, used sparingly --- */
-  --rose:      #D9A9A0;
-  --rose2:     #E8C8C0;
+  /* --- Surfaces: a pale paper with a faint green-grey bias.
+         Deliberately not cream — cream with a serif and a gold
+         accent is the stock "luxury beauty" look. --- */
+  --bg:        #F1F2EE;   /* page */
+  --bg2:       #E8EAE3;   /* alternating section */
+  --panel:     #FBFCF9;   /* raised surface */
+  --panel2:    #E4E7DE;   /* hover / nested */
+  --line:      #D4D9CE;   /* hairline */
+  --line2:     #B2BAAC;   /* stronger border */
+
+  /* --- Accent: petrol. Clinical rather than decorative, and the
+         complement of the amber in the clinic's photographs, so the
+         two reinforce each other instead of competing. --- */
+  --gold:      #1F4A47;   /* primary */
+  --gold2:     #143331;   /* deep — emphasis, prices */
+  --gold3:     #0C2423;   /* deepest — gradient ends */
+  --on-accent: #F3F5F0;   /* text on an accent field */
+
+  /* --- Secondary: clay, taken from the sunset in the clinic's own
+         window. Two appearances per page at most. --- */
+  --rose:      #A8623C;
+  --rose2:     #8C4E2D;
+
+  /* --- Semantic state, kept separate from the accent --- */
+  --ok:        #2C6A4F;
+  --warn:      #8A6420;
+  --crit:      #8F3D2F;
 
   /* --- Text --- */
-  --txt:       #F0EBE4;
-  --muted:     #A79E93;
-  --muted2:    #726A60;
+  --txt:       #14181A;
+  --muted:     #58605C;
+  --muted2:    #848B85;
 
-  /* --- Type --- */
-  --serif: "Cormorant Garamond", Georgia, "Times New Roman", serif;
-  --sans:  "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
-  --mono:  "Chakra Petch", var(--sans);
+  /* --- Type ---
+     Newsreader for display: a reading serif with the set of a
+     journal, deliberately not Cormorant or Playfair.
+     IBM Plex Sans and Mono for everything operational — the mono
+     carries prices, durations and times, which are the clinic's
+     real units and want tabular figures. --- */
+  --serif: "Newsreader", Georgia, "Times New Roman", serif;
+  --sans:  "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+  --mono:  "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 
   /* --- Rhythm --- */
   --gutter:  clamp(1.25rem, 5vw, 4rem);
-  --section: clamp(5rem, 12vw, 10rem);
+  --section: clamp(5rem, 12vw, 9rem);
   --maxw:    1200px;
-  --r:       18px;
-  --r2:      26px;
+  --r:       4px;         /* near-square: a document, not a card deck */
+  --r2:      6px;
 
-  --shadow:    0 2px 8px rgba(0,0,0,.4), 0 24px 60px rgba(0,0,0,.5);
-  --shadow-lg: 0 40px 100px rgba(0,0,0,.7);
-  --glow:      0 0 0 1px rgba(201,162,74,.28), 0 12px 40px rgba(201,162,74,.14);
+  /* Shadows are light on paper. Heavy black shadow on a pale ground
+     is the single fastest way to make a site look cheap. */
+  --shadow:    0 1px 2px rgba(20,24,26,.05), 0 10px 28px rgba(20,24,26,.07);
+  --shadow-lg: 0 28px 70px rgba(20,24,26,.13);
+  --glow:      0 0 0 1px rgba(31,74,71,.20), 0 8px 26px rgba(31,74,71,.10);
+
+  /* Scrim used over photography and under fixed chrome */
+  --scrim:     rgba(241,242,238,.86);
+  --scrim-dk:  rgba(14,18,20,.55);
 
   --ease: cubic-bezier(.22,.61,.36,1);
 }
@@ -66,39 +100,62 @@ body {
 img { max-width: 100%; display: block; }
 button { font: inherit; color: inherit; cursor: pointer; }
 a { color: inherit; }
-::selection { background: var(--gold); color: #0B0A0A; }
+::selection { background: var(--gold); color: var(--on-accent); }
 
-/* ---------- TYPE ---------- */
+/* ---------- TYPE ----------
+   Newsreader is a sturdier face than the stock luxury serifs, so it
+   is set lighter and a size smaller than they would be, and given
+   real optical sizing through the variable `opsz` axis. */
 h1, h2, h3 {
   font-family: var(--serif);
-  font-weight: 500;
-  line-height: 1.05;
-  letter-spacing: -.015em;
+  font-variation-settings: "opsz" 48;
+  font-weight: 400;
+  line-height: 1.06;
+  letter-spacing: -.018em;
+  text-wrap: balance;
   margin: 0;
 }
-h1 { font-size: clamp(3rem, 8.5vw, 6rem); }
-h2 { font-size: clamp(2.2rem, 5.2vw, 3.7rem); }
-h3 { font-size: clamp(1.35rem, 2.4vw, 1.8rem); }
+h1 {
+  font-size: clamp(2.7rem, 7vw, 5rem);
+  font-weight: 300;
+  font-variation-settings: "opsz" 72;
+  letter-spacing: -.026em;
+  line-height: 1.02;
+}
+h2 { font-size: clamp(2rem, 4.4vw, 3.1rem); }
+h3 { font-size: clamp(1.25rem, 2.1vw, 1.6rem); font-variation-settings: "opsz" 24; }
 h4 { margin: 0; }
 
+/* Section label. A hairline and a lowercase mono annotation, the way
+   a figure is labelled in a printed monograph — not a tracked-out
+   capital eyebrow, which is the stock generated-page signature. */
 .eyebrow {
+  display: flex; align-items: center; gap: .7rem;
   font-family: var(--mono);
-  font-size: .7rem;
-  font-weight: 600;
-  letter-spacing: .28em;
-  text-transform: uppercase;
+  font-size: .72rem;
+  font-weight: 500;
+  letter-spacing: .01em;
   color: var(--gold);
-  margin: 0 0 1.35rem;
+  margin: 0 0 1.5rem;
+}
+.eyebrow::before {
+  content: ""; flex: 0 0 1.6rem; height: 1px; background: currentColor; opacity: .55;
 }
 .lede {
-  font-size: clamp(1.05rem, 1.7vw, 1.22rem);
+  font-size: clamp(1.05rem, 1.6vw, 1.18rem);
   color: var(--muted);
-  max-width: 56ch;
-  line-height: 1.75;
+  max-width: 62ch;
+  line-height: 1.72;
 }
 .muted  { color: var(--muted); }
 .muted2 { color: var(--muted2); }
-em.hl { font-style: italic; color: var(--gold2); }   /* solid, never gradient-clipped */
+
+/* Every figure on this site — price, duration, interval, time — is
+   set in the mono face with lining tabular figures, so numbers in a
+   column line up the way they do on a clinical chart. */
+.num, .price, .dur, .slot, .cal__grid button, .recap__row strong {
+  font-variant-numeric: tabular-nums lining-nums;
+}
 
 /* ---------- LAYOUT ---------- */
 .wrap    { width: min(var(--maxw), 100%); margin-inline: auto; padding-inline: var(--gutter); }
@@ -109,17 +166,17 @@ em.hl { font-style: italic; color: var(--gold2); }   /* solid, never gradient-cl
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: .6rem;
   padding: 1.05rem 2.1rem;
-  border: 1px solid transparent; border-radius: 100px;
+  border: 1px solid transparent; border-radius: 2px;
   font-family: var(--sans); font-size: .8rem; font-weight: 600;
-  letter-spacing: .1em; text-transform: uppercase; text-decoration: none;
+  letter-spacing: .06em; text-transform: uppercase; text-decoration: none;
   transition: all .4s var(--ease);
   white-space: nowrap;
 }
 .btn--gold {
-  background: linear-gradient(135deg, var(--gold2), var(--gold) 55%, var(--gold3));
-  color: #16110A;
+  background: var(--gold);
+  color: var(--on-accent);
 }
-.btn--gold:hover { transform: translateY(-2px); box-shadow: 0 14px 40px rgba(201,162,74,.32); }
+.btn--gold:hover { background: var(--gold2); box-shadow: var(--glow); }
 .btn--ghost { background: transparent; color: var(--txt); border-color: var(--line2); }
 .btn--ghost:hover { border-color: var(--gold); color: var(--gold2); }
 .btn:disabled { opacity: .3; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
@@ -134,7 +191,7 @@ em.hl { font-style: italic; color: var(--gold2); }   /* solid, never gradient-cl
   border-bottom: 1px solid transparent;
 }
 .nav.is-stuck {
-  background: rgba(11,10,10,.86);
+  background: var(--scrim);
   backdrop-filter: saturate(160%) blur(16px);
   -webkit-backdrop-filter: saturate(160%) blur(16px);
   padding-block: .85rem;
@@ -162,7 +219,7 @@ em.hl { font-style: italic; color: var(--gold2); }   /* solid, never gradient-cl
 @media (max-width: 940px) {
   .nav__links { display: none; }
   .nav__burger { display: block; }
-  .nav.is-open { background: rgba(11,10,10,.97); }
+  .nav.is-open { background: var(--bg); }
   .nav.is-open .nav__links {
     display: flex; flex-direction: column; align-items: flex-start; gap: 1.4rem;
     position: absolute; inset: 100% 0 auto 0;
@@ -185,7 +242,7 @@ em.hl { font-style: italic; color: var(--gold2); }   /* solid, never gradient-cl
 }
 .hero::before {   /* warm pool of light behind the copy */
   content: ""; position: absolute; inset: 0; pointer-events: none;
-  background: radial-gradient(70% 55% at 12% 40%, rgba(201,162,74,.11) 0%, transparent 70%);
+  background: radial-gradient(70% 55% at 12% 40%, rgba(31,74,71,.07) 0%, transparent 70%);
 }
 .hero__text { position: relative; max-width: 36rem; }
 .hero h1 { margin-bottom: 1.7rem; }
@@ -200,7 +257,7 @@ em.hl { font-style: italic; color: var(--gold2); }   /* solid, never gradient-cl
 .hero__media img { width: 100%; height: 100%; object-fit: cover; }
 .hero__media::after {
   content: ""; position: absolute; inset: 0; pointer-events: none;
-  background: linear-gradient(180deg, rgba(11,10,10,.15) 0%, transparent 35%, rgba(11,10,10,.55) 100%);
+  background: linear-gradient(180deg, transparent 0%, transparent 45%, rgba(14,18,20,.42) 100%);
 }
 
 .promises {
@@ -301,7 +358,7 @@ em.hl { font-style: italic; color: var(--gold2); }   /* solid, never gradient-cl
 .shot:hover img { transform: scale(1.05); }
 .shot__tag {
   position: absolute; left: .8rem; bottom: .8rem;
-  background: rgba(11,10,10,.78); backdrop-filter: blur(10px);
+  background: var(--scrim); backdrop-filter: blur(10px);
   border: 1px solid var(--line2);
   padding: .38rem .8rem; border-radius: 100px;
   font-family: var(--mono); font-size: .62rem; font-weight: 600;
@@ -447,7 +504,7 @@ em.hl { font-style: italic; color: var(--gold2); }   /* solid, never gradient-cl
 .chat__reply { font-size: .72rem; opacity: .8; margin-top: .2rem; }
 .chat__x { background: none; border: 0; color: #fff; opacity: .7; font-size: 1.35rem; line-height: 1; padding: 0 .15rem; transition: opacity .3s; }
 .chat__x:hover { opacity: 1; }
-.chat__body { padding: 1.35rem 1.15rem; background: #0E0C0C; }
+.chat__body { padding: 1.35rem 1.15rem; background: var(--panel2); }
 .chat__bubble {
   position: relative; background: var(--panel2); color: var(--txt);
   padding: .8rem .95rem; border-radius: 0 12px 12px 12px;
@@ -474,7 +531,7 @@ em.hl { font-style: italic; color: var(--gold2); }   /* solid, never gradient-cl
 .modal {
   position: fixed; inset: 0; z-index: 1000;
   display: grid; place-items: center; padding: 1rem;
-  background: rgba(4,3,3,.78);
+  background: var(--scrim-dk);
   backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
   opacity: 0; visibility: hidden; transition: opacity .4s var(--ease), visibility .4s;
 }
@@ -610,14 +667,275 @@ em.hl { font-style: italic; color: var(--gold2); }   /* solid, never gradient-cl
   background: var(--panel); border: 1px solid var(--line); border-left: 2px solid var(--gold);
   border-radius: 8px; padding: .9rem 1.05rem; font-size: .87rem; color: var(--muted); margin-bottom: 1.25rem;
 }
-.err { color: #E0857A; font-size: .87rem; margin-top: .75rem; }
+.err { color: var(--crit); font-size: .87rem; margin-top: .75rem; }
 
 /* ---------- REVEAL ---------- */
-.reveal { opacity: 0; transform: translateY(24px); transition: opacity .9s var(--ease), transform .9s var(--ease); }
-.reveal.is-in { opacity: 1; transform: none; }
+/* The hero entrance is the only orchestrated motion on the page.
+   Everything else is interaction response. A fade-up on every
+   section reads as a template and hides content from anyone who
+   lands mid-page. */
+@keyframes rise { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: none; } }
+.hero__text > *, .hero__media { animation: rise .85s var(--ease) backwards; }
+.hero__text .eyebrow      { animation-delay: .04s; }
+.hero__text h1            { animation-delay: .13s; }
+.hero__text .lede         { animation-delay: .25s; }
+.hero__text .hero__actions{ animation-delay: .35s; }
+.hero__media              { animation-delay: .18s; }
+.promises                 { animation: rise .85s var(--ease) .45s backwards; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
-  .reveal { opacity: 1; transform: none; }
+  .hero__text > *, .hero__media, .promises { animation: none; }
   html { scroll-behavior: auto; }
+}
+
+/* ============================================================
+   THE ENGINE — owner-facing section
+   ------------------------------------------------------------
+   Set as a clinical record rather than a deck of cards: hairline
+   rules, square corners, mono figures, one accent. The only
+   animation on the page that is not an interaction response lives
+   here, and it is the product demo, so it earns its place.
+   ============================================================ */
+
+.engine { background: var(--bg2); border-block: 1px solid var(--line); }
+.engine__head { max-width: 62ch; margin-bottom: clamp(2.5rem, 5vw, 3.75rem); }
+
+/* ---------- the refill showpiece ---------- */
+.refill {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.refill__head {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  gap: 1.5rem; flex-wrap: wrap;
+  padding: clamp(1.4rem, 3vw, 2rem);
+  border-bottom: 1px solid var(--line);
+}
+.refill__head h3 { margin-bottom: .4rem; }
+.refill__sub { font-size: .92rem; margin: 0; }
+.refill__play { padding: .85rem 1.5rem; font-size: .72rem; }
+.refill__play[data-running] { opacity: .45; pointer-events: none; }
+
+.refill__body {
+  display: grid; gap: 1px;
+  background: var(--line);
+  grid-template-columns: 1fr;
+}
+@media (min-width: 900px) { .refill__body { grid-template-columns: 22rem 1fr; } }
+
+/* --- the appointment slot --- */
+.refill__slot {
+  background: var(--panel);
+  padding: clamp(1.4rem, 3vw, 1.9rem);
+  display: grid; gap: .7rem; align-content: start;
+  border-left: 3px solid var(--line2);
+  transition: border-color .5s var(--ease), background .5s var(--ease);
+}
+.slot__time {
+  display: flex; align-items: baseline; gap: .6rem;
+  font-family: var(--mono); font-size: 1.5rem; font-weight: 500; color: var(--txt);
+}
+.slot__time .muted2 { font-size: .78rem; font-weight: 400; }
+.slot__tx { font-family: var(--serif); font-size: 1.22rem; line-height: 1.25; }
+.slot__who {
+  font-family: var(--mono); font-size: .85rem; color: var(--muted);
+  transition: color .4s var(--ease);
+}
+.slot__val { font-family: var(--mono); font-size: 1.15rem; font-weight: 500; }
+.slot__state {
+  justify-self: start;
+  font-family: var(--mono); font-size: .7rem; letter-spacing: .04em;
+  padding: .3rem .6rem; border-radius: 2px;
+  border: 1px solid currentColor; color: var(--muted);
+  transition: color .4s var(--ease);
+}
+/* state is carried on the container so the stripe, the name and the
+   chip all move together */
+.refill__slot[data-state="booked"]    { border-left-color: var(--line2); }
+.refill__slot[data-state="cancelled"] { border-left-color: var(--crit);  background: rgba(143,61,47,.045); }
+.refill__slot[data-state="cancelled"] .slot__state,
+.refill__slot[data-state="cancelled"] .slot__who { color: var(--crit); }
+.refill__slot[data-state="cancelled"] .slot__who { text-decoration: line-through; }
+.refill__slot[data-state="hunting"]   { border-left-color: var(--warn);  background: rgba(138,100,32,.05); }
+.refill__slot[data-state="hunting"] .slot__state { color: var(--warn); }
+.refill__slot[data-state="refilled"]  { border-left-color: var(--ok);    background: rgba(44,106,79,.05); }
+.refill__slot[data-state="refilled"] .slot__state,
+.refill__slot[data-state="refilled"] .slot__who { color: var(--ok); }
+
+/* --- the waitlist --- */
+.refill__list { background: var(--panel); padding: clamp(1.2rem, 3vw, 1.6rem); }
+.wl__head {
+  display: flex; justify-content: space-between; gap: 1rem;
+  font-family: var(--mono); font-size: .7rem; color: var(--muted2);
+  padding-bottom: .75rem; border-bottom: 1px solid var(--line); margin-bottom: .25rem;
+}
+.wl { list-style: none; margin: 0; padding: 0; }
+.wl__row {
+  display: grid; align-items: center; gap: .5rem 1rem;
+  grid-template-columns: 1.5rem 1fr auto;
+  grid-template-areas: "rank name stat" ".  why  stat";
+  padding: .85rem .6rem;
+  border-bottom: 1px solid var(--line);
+  border-left: 2px solid transparent;
+  transition: background .45s var(--ease), border-color .45s var(--ease), opacity .45s var(--ease);
+}
+.wl__row:last-child { border-bottom: 0; }
+.wl__rank { grid-area: rank; font-family: var(--mono); font-size: .85rem; color: var(--muted2); }
+.wl__name { grid-area: name; font-weight: 500; }
+.wl__why  { grid-area: why;  font-size: .84rem; color: var(--muted); }
+.wl__stat {
+  grid-area: stat;
+  font-family: var(--mono); font-size: .7rem; letter-spacing: .03em;
+  color: var(--muted2); white-space: nowrap;
+  transition: color .4s var(--ease);
+}
+.wl__row[data-state="notified"] {
+  background: rgba(138,100,32,.07); border-left-color: var(--warn);
+}
+.wl__row[data-state="notified"] .wl__stat { color: var(--warn); }
+.wl__row[data-state="passed"]  { opacity: .4; }
+.wl__row[data-state="claimed"] {
+  background: rgba(44,106,79,.08); border-left-color: var(--ok);
+}
+.wl__row[data-state="claimed"] .wl__stat { color: var(--ok); font-weight: 600; }
+
+/* the one piece of ambient motion: a notification going out */
+@keyframes wlPing {
+  0%   { box-shadow: inset 3px 0 0 -1px var(--warn); }
+  50%  { box-shadow: inset 3px 0 0 1px var(--warn); }
+  100% { box-shadow: inset 3px 0 0 -1px var(--warn); }
+}
+.wl__row[data-state="notified"] { animation: wlPing 1.4s var(--ease) infinite; }
+
+/* --- commentary + counters --- */
+.refill__say {
+  margin: 0; padding: 1.1rem clamp(1.4rem, 3vw, 2rem);
+  border-top: 1px solid var(--line);
+  font-size: .95rem; color: var(--muted); min-height: 3.4rem;
+  display: flex; align-items: center;
+}
+.refill__say strong { color: var(--txt); font-weight: 500; }
+.refill__foot {
+  display: grid; gap: 1px; background: var(--line);
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  border-top: 1px solid var(--line);
+}
+.stat { background: var(--panel); padding: 1.1rem clamp(1.4rem, 3vw, 2rem); }
+.stat__k { display: block; font-family: var(--mono); font-size: .68rem; color: var(--muted2); margin-bottom: .3rem; }
+.stat__v { font-family: var(--mono); font-size: 1.35rem; font-weight: 500; transition: color .4s var(--ease); }
+.stat__v[data-flash] { color: var(--ok); }
+
+/* ---------- the catalogue ---------- */
+.engine__cat { margin-top: clamp(3rem, 6vw, 4.5rem); }
+.cat__head {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  gap: 1.5rem; flex-wrap: wrap; margin-bottom: 1.75rem;
+}
+.cat__filters { display: flex; flex-wrap: wrap; gap: .4rem; }
+.cat__filters button {
+  background: transparent; border: 1px solid var(--line2); border-radius: 2px;
+  padding: .5rem .9rem;
+  font-family: var(--mono); font-size: .72rem; color: var(--muted);
+  transition: all .3s var(--ease);
+}
+.cat__filters button:hover { border-color: var(--gold); color: var(--gold); }
+.cat__filters button[aria-pressed="true"] { background: var(--gold); border-color: var(--gold); color: var(--on-accent); }
+
+.cat { border-top: 1px solid var(--line2); }
+.cat__row {
+  display: grid; gap: .5rem 2rem;
+  grid-template-columns: 1fr;
+  padding: 1.5rem 0;
+  border-bottom: 1px solid var(--line);
+}
+@media (min-width: 820px) {
+  .cat__row { grid-template-columns: minmax(0,1.1fr) minmax(0,1.5fr) minmax(0,.9fr); align-items: start; }
+}
+.cat__name { font-family: var(--serif); font-size: 1.18rem; line-height: 1.3; }
+.cat__when { font-family: var(--mono); font-size: .74rem; color: var(--gold); margin-top: .35rem; display: block; }
+.cat__does { font-size: .93rem; color: var(--muted); line-height: 1.65; margin: 0; }
+.cat__pay  { font-size: .89rem; color: var(--txt); margin: .6rem 0 0; }
+.cat__pay::before { content: "—  "; color: var(--muted2); }
+.cat__side { display: grid; gap: .55rem; align-content: start; }
+.cat__needs { list-style: none; margin: 0; padding: 0; display: grid; gap: .25rem; }
+.cat__needs li { font-family: var(--mono); font-size: .74rem; color: var(--muted); }
+.cat__needs li::before { content: "+ "; color: var(--muted2); }
+.cat__tag {
+  justify-self: start;
+  font-family: var(--mono); font-size: .68rem; letter-spacing: .03em;
+  padding: .28rem .55rem; border-radius: 2px;
+  border: 1px solid var(--ok); color: var(--ok);
+}
+.cat__tag[data-bundled] { border-color: var(--line2); color: var(--muted2); }
+.cat__fee { font-family: var(--mono); font-size: .95rem; font-weight: 500; color: var(--txt); }
+.cat__note { font-size: .82rem; margin-top: 1.5rem; max-width: 62ch; line-height: 1.6; }
+
+/* ---------- reduced motion ----------
+   The sequence still runs and still tells the story; it simply
+   arrives at each state without animating into it. */
+@media (prefers-reduced-motion: reduce) {
+  .wl__row[data-state="notified"] { animation: none; }
+  .refill__slot, .wl__row, .slot__who, .slot__state, .wl__stat, .stat__v { transition: none; }
+}
+
+/* ---------- WAITLIST (booking flow) ----------
+   Shown when a day is full. Styled as part of the booking sheet, not
+   as a consolation prize. */
+.wlist { display: grid; gap: 1.25rem; }
+.wlist__top h4 { font-family: var(--serif); font-size: 1.45rem; margin-bottom: .5rem; }
+.wlist__top p  { margin: 0; font-size: .93rem; line-height: 1.65; }
+
+.wlist__flex { border: 0; margin: 0; padding: 0; display: grid; gap: .5rem; }
+.wlist__flex legend {
+  font-family: var(--mono); font-size: .7rem; color: var(--muted2);
+  padding: 0; margin-bottom: .35rem;
+}
+.wlist__flex label {
+  display: flex; align-items: flex-start; gap: .7rem;
+  padding: .8rem .9rem;
+  border: 1px solid var(--line); border-radius: var(--r);
+  cursor: pointer; transition: border-color .3s var(--ease), background .3s var(--ease);
+}
+.wlist__flex label:hover { border-color: var(--line2); }
+.wlist__flex input { margin-top: .22rem; accent-color: var(--gold); flex: 0 0 auto; }
+.wlist__flex label:has(input:checked) { border-color: var(--gold); background: rgba(31,74,71,.04); }
+.wlist__flex label span { display: grid; gap: .15rem; }
+.wlist__flex strong { font-weight: 500; font-size: .95rem; }
+.wlist__flex em { font-style: normal; font-size: .82rem; color: var(--muted); }
+
+.wlist__small { font-size: .78rem; line-height: 1.55; margin: 0; }
+.wlist--done { text-align: left; }
+.wlist--done h4 { font-family: var(--serif); font-size: 1.5rem; color: var(--ok); margin-bottom: .6rem; }
+
+/* ---------- PLATES ----------
+   Photographs set as plates in a monograph: full measure, a hairline
+   frame, and a mono caption that says what the reader is looking at.
+   The page is pale so these carry all the warmth. */
+.plate { margin: 0; }
+.plate img { width: 100%; height: auto; display: block; border: 1px solid var(--line); }
+.plate figcaption {
+  font-family: var(--mono); font-size: .74rem; color: var(--muted);
+  margin-top: .7rem; line-height: 1.5;
+}
+.plate--wide { padding-inline: var(--gutter); }
+.plate--wide figcaption { max-width: 62ch; }
+
+/* Aftercare accordion sits beside the tray, not under it */
+.acc-grid { display: grid; gap: clamp(1.5rem, 4vw, 3rem); align-items: start; }
+@media (min-width: 900px) { .acc-grid { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); } }
+.plate--tall img { aspect-ratio: 1 / 1; object-fit: cover; }
+
+/* ---------- TOUCH TARGETS ----------
+   Measured at 390px: the nav action and the catalogue filters came in
+   under 44px. Nothing tappable is allowed below that. */
+@media (max-width: 900px) {
+  .nav__cta,
+  .cat__filters button { min-height: 44px; padding-block: .7rem; }
+  .info-rows a,
+  .foot__links a { display: inline-block; min-height: 44px; line-height: 44px; }
+  .refill__play { min-height: 46px; width: 100%; }
 }

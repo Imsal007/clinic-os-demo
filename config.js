@@ -92,7 +92,9 @@ const CLINIC = {
   chat: {
     enabled:     true,
     replyTime:   "Typically replies within minutes",
-    autoOpenAfter: 14,        // seconds. 0 = never auto-open.
+    autoOpenAfter: 0,         // seconds. 0 = never auto-open.
+                              // Off by design: a chat panel that opens itself
+                              // covers the page and reads as a cheap plugin.
     onlineLabel: "Online",
 
     // Section id → the prompt shown in the bubble.
@@ -115,14 +117,19 @@ const CLINIC = {
      "images/hero.jpg" etc. The gallery MUST become real, consented
      before/after work before galleryIsPlaceholder is set to false.       */
   images: {
-    hero:         "https://images.unsplash.com/photo-1601117830731-1a36c879f666?w=1000&h=1250&fit=crop&q=80&auto=format",
-    practitioner: "https://images.unsplash.com/photo-1568038479111-87bf80659645?w=900&h=1200&fit=crop&q=80&auto=format",
+    hero:         "images/practitioner.jpg",
+    practitioner: "images/consultation.jpg",
+    room:         "images/clinic-room.jpg",
+    tray:         "images/tray-prep.jpg",
     gallery: [
-      { src: "https://images.unsplash.com/photo-1616639943825-e0fbad20a3d3?w=600&h=800&fit=crop&q=80&auto=format", tag: "Injectables" },
-      { src: "https://images.unsplash.com/photo-1588095803059-6e4bbbe24dbb?w=600&h=800&fit=crop&q=80&auto=format", tag: "The clinic" },
-      { src: "https://images.unsplash.com/photo-1536766768598-e09213fdcf22?w=600&h=800&fit=crop&q=80&auto=format", tag: "Skin" },
-      { src: "https://images.unsplash.com/photo-1634510979979-4be6881d31bb?w=600&h=800&fit=crop&q=80&auto=format", tag: "Advanced" }
+      { src: "images/result-lip.jpg",      tag: "Lip enhancement" },
+      { src: "images/result-cheek.jpg",    tag: "Cheek and midface" },
+      { src: "images/result-wrinkle.jpg",  tag: "Wrinkle relaxing" },
+      { src: "images/result-forehead.jpg", tag: "Upper face" }
     ],
+    // These are photographs of treatment in progress, not before-and-after
+    // comparisons. They stay labelled as such until the clinic supplies
+    // consented before-and-after work — see ONBOARDING.md.
     galleryIsPlaceholder: true
   },
 
@@ -168,6 +175,15 @@ const CLINIC = {
         blurb: "Islington clients tend to book the Thursday late list, which runs to 8pm for exactly this reason.",
         travel: "Old Street on the Northern line, then a ten-minute walk east. Angel is about twenty-five minutes door to door." }
     ]
+  },
+
+  /* ---------- COMMERCIAL ----------
+     The engine section doubles as SAL Digital's module menu. Turn
+     showFees on for a pitch deck or a sales call; leave it off on a
+     live clinic site, where a client's visitors should never see
+     what the clinic paid for the build.                            */
+  commercial: {
+    showFees: true
   },
 
   /* ---------- POLICY COPY ---------- */

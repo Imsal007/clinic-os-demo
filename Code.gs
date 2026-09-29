@@ -91,14 +91,107 @@ const CONFIG = {
     'polynucleotides':['Small bumps settle within 24 hours', 'Bruising around the eyes is common', 'No make-up for 12 hours', 'SPF daily'],
     'collagen-stimulator':['Massage 5 minutes, 5 times a day, for 5 days', 'Swelling settles within a week', 'No exercise or flying for 48 hours', 'Assess results at three months']
   },
-  GENERIC_AFTERCARE: ['Avoid heat, exercise and alcohol for 24 hours', 'Keep the area clean', 'SPF daily', 'Message us if anything worries you']
+  GENERIC_AFTERCARE: ['Avoid heat, exercise and alcohol for 24 hours', 'Keep the area clean', 'SPF daily', 'Message us if anything worries you'],
+
+  /* ---------- WAITLIST ----------
+     How long a person has to claim a released slot before it passes
+     to the next one down the list. Short enough that the slot keeps
+     moving, long enough that somebody at work can answer.          */
+  waitlist: {
+    claimMinutes: 20,
+    maxOffersPerSlot: 6        // give up after this many and alert the owner
+  },
+
+  /* ---------- NO-SHOW RISK ----------
+     Points are added up per booking. At or above `depositAt`, the
+     client is asked for a deposit; everybody else is not. Tune the
+     threshold on real data after a couple of months.               */
+  risk: {
+    depositAt:        5,
+    depositPercent:   25,
+    depositUrl:       'https://buy.stripe.com/REPLACE_ME',
+    points: {
+      newClient:        2,   // no previous completed appointment
+      bookedOver21Days: 2,   // made a long way ahead
+      highValue:        1,   // price at or above `highValueFrom`
+      lateSlot:         1,   // starts at or after `lateFrom`
+      weekend:          1,
+      priorLateCancel:  3,   // cancelled inside 48h before
+      priorNoShow:      4
+    },
+    highValueFrom: 300,
+    lateFrom:      '18:00'
+  },
+
+  /* ---------- PATCH TESTING ----------
+     Treatments that may not go ahead without a valid patch test, and
+     how long a test stays valid for.                                */
+  patchTest: {
+    requiredFor: ['chemical-peel'],
+    validForDays: 180,
+    minHoursBefore: 24
+  },
+
+  /* ---------- CONTRAINDICATIONS ----------
+     Terms watched for in the notes and the medical history answers.
+     A hit is a flag for the practitioner to read, never an automatic
+     refusal — the clinical decision stays with her.                 */
+  flagTerms: [
+    'warfarin', 'apixaban', 'rivaroxaban', 'clopidogrel', 'blood thinner', 'anticoagulant',
+    'pregnant', 'pregnancy', 'breastfeeding', 'nursing',
+    'autoimmune', 'lupus', 'myasthenia',
+    'cold sore', 'herpes', 'active infection', 'shingles',
+    'isotretinoin', 'roaccutane', 'accutane',
+    'allergic', 'allergy', 'anaphyla',
+    'vaccine', 'vaccination',
+    'keloid', 'immunosuppress'
+  ],
+
+  /* ---------- STOCK ----------
+     What one appointment consumes. Used to forecast against the
+     diary so product is reordered before it runs short, and used
+     before it expires.                                             */
+  consumables: {
+    'wrinkle-one':         { item: 'Toxin 100u vial',      units: 20 },
+    'wrinkle-three':       { item: 'Toxin 100u vial',      units: 50 },
+    'lip-filler':          { item: 'HA filler 1ml',        units: 1 },
+    'cheek-filler':        { item: 'HA filler 1ml',        units: 2 },
+    'polynucleotides':     { item: 'Polynucleotide 2ml',   units: 1 },
+    'collagen-stimulator': { item: 'Collagen stimulator',  units: 1 },
+    'chemical-peel':       { item: 'Peel solution 50ml',   units: 5 },
+    'microneedling':       { item: 'Needle cartridge',     units: 1 }
+  },
+  stock: {
+    reorderLeadDays: 14,       // warn this far before running out
+    expiryWarnDays:  45        // warn this far before product expires
+  },
+
+  /* ---------- QUIET WEEKS ----------
+     If the week ahead is emptier than this, the remaining slots are
+     offered to clients who have not been in for a while.            */
+  quiet: {
+    bookedBelowPercent: 55,
+    lapsedAfterWeeks:   16,
+    maxOffers:          25
+  },
+
+  /* ---------- REVIEW PACING ----------
+     Google treats a burst of reviews on one day as suspicious, so
+     requests are spread out.                                        */
+  reviewsPerDay: 3
 };
 
-const SHEETS = { bookings: 'Bookings', log: 'Log' };
+const SHEETS = { bookings: 'Bookings', log: 'Log', waitlist: 'Waitlist', stock: 'Stock', leads: 'Leads' };
 const HEADERS = ['Booking ID','Created','Date','Time','Treatment ID','Treatment','Duration','Price',
                  'First Name','Last Name','Email','Phone','Notes','Status','Calendar Event ID',
                  'Confirmation Sent','Prep Sent','Reminder 48h','Reminder 24h','Aftercare Sent',
-                 'Review Asked','Rebook Nudged','Rebook Due'];
+                 'Review Asked','Rebook Nudged','Rebook Due',
+                 'Risk Score','Deposit Asked','Patch Test OK','Flags','Consult Followed Up'];
+
+const WAITLIST_HEADERS = ['Joined','Name','Email','Phone','Treatment ID','Treatment','Duration',
+                          'Target Date','Flexibility','Status','Offered At','Offer Expires','Claim Token'];
+const STOCK_HEADERS    = ['Item','On Hand','Unit','Expires','Reordered'];
+const LEAD_HEADERS     = ['Seen','Name','Email','Phone','Treatment ID','Treatment','Date','Time','Status','Chased'];
 
 /* ============================================================
    WEB APP ENDPOINTS
@@ -109,6 +202,13 @@ function doGet(e) {
     const action = (e && e.parameter && e.parameter.action) || 'ping';
     if (action === 'slots') {
       return json({ ok: true, slots: availableSlots(e.parameter.date, Number(e.parameter.duration || 30)) });
+    }
+    if (action === 'claim') {
+      const r = claimSlot({ token: e.parameter.token });
+      return HtmlService.createHtmlOutput(shell(
+        r.ok ? 'The appointment is yours' : 'That slot has gone',
+        '<p>' + (r.message || '') + '</p>'
+      ));
     }
     return json({ ok: true, clinic: CONFIG.clinicName, status: 'live' });
   } catch (err) {
@@ -121,6 +221,12 @@ function doPost(e) {
   try {
     lock.waitLock(20000);
     const b = JSON.parse(e.postData.contents);
+
+    /* Routes that are not a booking. Each returns on its own. */
+    if (b.action === 'waitlist') return json(joinWaitlist(b));
+    if (b.action === 'claim')    return json(claimSlot(b));
+    if (b.action === 'abandon')  return json(recordLead(b));
+    if (b.action === 'cancel')   return json(cancelBooking(b));
 
     if (!b.firstName || !b.email || !b.date || !b.time || !b.treatmentId) {
       return json({ ok: false, error: 'Missing required fields' });
@@ -135,23 +241,39 @@ function doPost(e) {
       return json({ ok: false, error: 'That time has just been taken. Please pick another.' });
     }
 
+    /* A patch test is a hard gate. The booking does not happen without
+       one, and the client is told what to book instead. */
+    const patch = checkPatchTest(b);
+    if (!patch.ok) {
+      return json({ ok: false, error: patch.message, needsPatchTest: true });
+    }
+
+    const risk  = scoreNoShowRisk(b);
+    const flags = flagContraindications(b.notes || '');
+
     const id  = 'BK' + Utilities.formatDate(new Date(), CONFIG.timezone, 'yyMMdd') + '-' +
                 Math.random().toString(36).slice(2, 6).toUpperCase();
     const ev  = createCalendarEvent(b, id);
-    const due = rebookDueDate(b.treatmentId, b.date);
+    const due = rebookDueDate(b.treatmentId, b.date, b.email);
 
     sheet(SHEETS.bookings).appendRow([
       id, new Date(), b.date, b.time, b.treatmentId, b.treatmentName, b.duration, b.price,
       b.firstName, b.lastName, b.email, b.phone, b.notes || '', 'Confirmed', ev,
-      '', '', '', '', '', '', '', due
+      '', '', '', '', '', '', '', due,
+      risk.score, risk.deposit ? 'Yes' : '', patch.ok ? 'Yes' : 'N/A', flags.join('; '), ''
     ]);
 
     sendConfirmation(b, id);
     markSent(id, 'Confirmation Sent');
     notifyOwner(b, id);
-    log('BOOKING', id + ' ' + b.date + ' ' + b.time + ' ' + b.treatmentName);
+    if (risk.deposit) { requestDeposit(b, id, risk); }
+    if (flags.length) { alertFlags(b, id, flags); }
+    clearLead(b.email);
+    log('BOOKING', id + ' ' + b.date + ' ' + b.time + ' ' + b.treatmentName +
+                   ' risk=' + risk.score + (risk.deposit ? ' deposit' : '') +
+                   (flags.length ? ' flags=' + flags.length : ''));
 
-    return json({ ok: true, bookingId: id });
+    return json({ ok: true, bookingId: id, depositRequested: risk.deposit });
   } catch (err) {
     log('ERROR', 'doPost: ' + err);
     return json({ ok: false, error: String(err) });
@@ -325,7 +447,16 @@ function runHourly() {
   try { sendReminders(); } catch (e) { log('ERROR', 'sendReminders: ' + e); }
   try { sendAftercare(); } catch (e) { log('ERROR', 'sendAftercare: ' + e); }
   try { askForReview(); }  catch (e) { log('ERROR', 'askForReview: ' + e); }
-  try { nudgeRebook(); }   catch (e) { log('ERROR', 'nudgeRebook: ' + e); }
+  try { nudgeRebook(); }      catch (e) { log('ERROR', 'nudgeRebook: ' + e); }
+  try { workWaitlist(); }     catch (e) { log('ERROR', 'workWaitlist: ' + e); }
+  try { chaseLeads(); }       catch (e) { log('ERROR', 'chaseLeads: ' + e); }
+  try { followUpConsults(); } catch (e) { log('ERROR', 'followUpConsults: ' + e); }
+}
+
+/** Once a day is enough for these — they look at whole weeks, not hours. */
+function runDaily() {
+  try { forecastStock(); }  catch (e) { log('ERROR', 'forecastStock: ' + e); }
+  try { fillQuietWeek(); }  catch (e) { log('ERROR', 'fillQuietWeek: ' + e); }
 }
 
 /** Walk the Bookings sheet, run `fn(row, index)`, write back any flags set. */
@@ -429,10 +560,17 @@ function sendAftercare() {
 
 /* --- review request, 24h after --- */
 function askForReview() {
+  /* Google treats a cluster of reviews landing on one day as suspicious,
+     so requests are rationed. The window below is deliberately wide
+     enough that a rationed request still goes out a day or two later
+     rather than being dropped. */
+  let sentToday = reviewsAskedToday();
+
   eachBooking(function (r, rowNum, sh) {
     if (r[20]) return;                                   // Review Asked
+    if (sentToday >= CONFIG.reviewsPerDay) return;
     const h = hoursUntil(r[2], r[3]);
-    if (h > -24 || h < -48) return;
+    if (h > -24 || h < -120) return;
     const c = rowClient(r);
     send(c.email, 'How are you getting on?',
       shell('How are you getting on, ' + c.first + '?',
@@ -451,7 +589,20 @@ function askForReview() {
         '<p style="font-size:13px;color:#8B837B">If something isn\'t right, the second button goes ' +
           'straight to ' + CONFIG.practitioner + ' privately. We\'d rather fix it than not know.</p>'));
     sh.getRange(rowNum, col('Review Asked')).setValue(new Date());
+    sentToday++;
   });
+}
+
+/** How many review requests have already gone out today. */
+function reviewsAskedToday() {
+  const data = sheet(SHEETS.bookings).getDataRange().getValues();
+  const c = col('Review Asked') - 1;
+  const today = new Date().toDateString();
+  let n = 0;
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][c] && new Date(data[i][c]).toDateString() === today) n++;
+  }
+  return n;
 }
 
 /* --- rebooking nudge at the treatment cycle --- */
@@ -476,11 +627,27 @@ function nudgeRebook() {
   });
 }
 
-function rebookDueDate(treatmentId, dateStr) {
+function rebookDueDate(treatmentId, dateStr, email) {
   const t = CONFIG.treatments[treatmentId];
   if (!t || !t.rebookWeeks) return '';
-  const d = new Date(dateStr + 'T00:00:00');
-  d.setDate(d.getDate() + t.rebookWeeks * 7);
+
+  /* The textbook cycle is the starting point, not the answer. Somebody
+     who has come back at ten weeks twice does not want to be asked at
+     twelve, and somebody who stretches to sixteen does not want to be
+     asked at twelve either. Their own pattern wins once there is one. */
+  let weeks = t.rebookWeeks;
+  if (email) {
+    const past = clientHistory(email).intervals.filter(function (w) {
+      return w > 1 && w < t.rebookWeeks * 2;      // discard noise
+    });
+    if (past.length >= 2) {
+      const mean = past.reduce(function (a, b) { return a + b; }, 0) / past.length;
+      // Ask a little before they would have come anyway.
+      weeks = Math.max(2, Math.round(mean) - 1);
+    }
+  }
+  const d = new Date(fmtDate(dateStr) + 'T00:00:00');
+  d.setDate(d.getDate() + weeks * 7);
   return d;
 }
 
@@ -552,6 +719,21 @@ function firstRun() {
   let lg = ss.getSheetByName(SHEETS.log);
   if (!lg) { lg = ss.insertSheet(SHEETS.log); lg.appendRow(['When', 'Type', 'Detail']); lg.setFrozenRows(1); }
 
+  /* The engine's own tabs. Each is created once and left alone. */
+  makeSheet(ss, SHEETS.waitlist, WAITLIST_HEADERS);
+  makeSheet(ss, SHEETS.leads,    LEAD_HEADERS);
+  const st = makeSheet(ss, SHEETS.stock, STOCK_HEADERS);
+  if (st && st.getLastRow() === 1) {
+    // Seed the shelf with the items the treatment menu actually consumes.
+    const seen = {};
+    Object.keys(CONFIG.consumables).forEach(function (k) {
+      const c = CONFIG.consumables[k];
+      if (seen[c.item]) return;
+      seen[c.item] = true;
+      st.appendRow([c.item, 0, 'units', '', '']);
+    });
+  }
+
   installTriggers();
   CalendarApp.getDefaultCalendar().getName();          // force calendar scope prompt
   log('SETUP', 'firstRun complete');
@@ -561,7 +743,20 @@ function firstRun() {
 function installTriggers() {
   ScriptApp.getProjectTriggers().forEach(function (t) { ScriptApp.deleteTrigger(t); });
   ScriptApp.newTrigger('runHourly').timeBased().everyHours(1).create();
+  ScriptApp.newTrigger('runDaily').timeBased().everyDays(1).atHour(7).create();
   ScriptApp.newTrigger('sendMonthlyReport').timeBased().onMonthDay(1).atHour(8).create();
+}
+
+/** Create a tab with a header row if it is not already there. */
+function makeSheet(ss, name, headers) {
+  let sh = ss.getSheetByName(name);
+  if (!sh) {
+    sh = ss.insertSheet(name);
+    sh.appendRow(headers);
+    sh.getRange(1, 1, 1, headers.length).setFontWeight('bold').setBackground('#F1EAE2');
+    sh.setFrozenRows(1);
+  }
+  return sh;
 }
 
 function sheet(name) {
@@ -618,4 +813,561 @@ function seedDemoBookings() {
     ]);
   }
   log('SETUP', 'Seeded 20 demo bookings');
+}
+
+/* ============================================================
+   NO-SHOW RISK
+   ------------------------------------------------------------
+   A blanket deposit costs a clinic bookings from the clients it
+   least wants to lose. This scores each booking instead, so only
+   the ones that actually carry risk are asked.
+   ============================================================ */
+
+function scoreNoShowRisk(b) {
+  const P = CONFIG.risk.points;
+  const hist = clientHistory(b.email);
+  let score = 0;
+  const why = [];
+
+  if (!hist.completed)                        { score += P.newClient;        why.push('new client'); }
+  if (daysBetween(new Date(), b.date) > 21)   { score += P.bookedOver21Days; why.push('booked over three weeks ahead'); }
+  if (Number(b.price) >= CONFIG.risk.highValueFrom) { score += P.highValue;  why.push('high value'); }
+  if (toMin(b.time) >= toMin(CONFIG.risk.lateFrom)) { score += P.lateSlot;   why.push('late slot'); }
+
+  const dow = new Date(b.date + 'T00:00:00').getDay();
+  if (dow === 0 || dow === 6)                 { score += P.weekend;          why.push('weekend'); }
+  if (hist.lateCancels)                       { score += P.priorLateCancel * hist.lateCancels; why.push('cancelled late before'); }
+  if (hist.noShows)                           { score += P.priorNoShow * hist.noShows;         why.push('missed an appointment before'); }
+
+  return { score: score, why: why, deposit: score >= CONFIG.risk.depositAt };
+}
+
+/** What this email address has done here before. */
+function clientHistory(email) {
+  const out = { completed: 0, lateCancels: 0, noShows: 0, lastDate: null, intervals: [] };
+  if (!email) return out;
+  const data = sheet(SHEETS.bookings).getDataRange().getValues();
+  const dates = [];
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][10]).toLowerCase() !== String(email).toLowerCase()) continue;
+    const status = data[i][13];
+    const d = fmtDate(data[i][2]);
+    if (status === 'No Show')            out.noShows++;
+    else if (status === 'Late Cancel')   out.lateCancels++;
+    else if (new Date(d + 'T00:00:00') < new Date()) { out.completed++; dates.push(d); }
+  }
+  dates.sort();
+  out.lastDate = dates.length ? dates[dates.length - 1] : null;
+  for (let j = 1; j < dates.length; j++) {
+    out.intervals.push(Math.round(daysBetween(dates[j - 1], dates[j]) / 7));
+  }
+  return out;
+}
+
+function requestDeposit(b, id, risk) {
+  const amount = Math.round(Number(b.price) * CONFIG.risk.depositPercent / 100);
+  send(b.email, 'A deposit to hold your appointment — ' + CONFIG.clinicName,
+    shell('Holding your appointment',
+      '<p>Hello ' + b.firstName + ',</p>' +
+      '<p>Your ' + b.treatmentName + ' on ' + prettyDate(b.date) + ' at ' + b.time +
+      ' is in the diary. Because it is a longer appointment booked some way ahead, we hold it with a ' +
+      CONFIG.risk.depositPercent + '% deposit of <strong>£' + amount + '</strong>.</p>' +
+      '<p>The deposit comes off the price on the day. It is refunded in full if you give us ' +
+      '48 hours’ notice to move or cancel.</p>' +
+      button('Pay the deposit', CONFIG.risk.depositUrl) +
+      '<p style="font-size:13px;color:#666">Reference ' + id + '</p>'));
+  markSent(id, 'Deposit Asked');
+  log('DEPOSIT', id + ' score=' + risk.score + ' (' + risk.why.join(', ') + ')');
+}
+
+/* ============================================================
+   PATCH TEST GATE
+   ------------------------------------------------------------
+   A hard stop, not a reminder. Some treatments may not go ahead
+   without a valid test on file, and that is an insurance question
+   rather than a scheduling one.
+   ============================================================ */
+
+function checkPatchTest(b) {
+  if (CONFIG.patchTest.requiredFor.indexOf(b.treatmentId) === -1) return { ok: true, required: false };
+
+  const data = sheet(SHEETS.bookings).getDataRange().getValues();
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - CONFIG.patchTest.validForDays);
+
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][10]).toLowerCase() !== String(b.email).toLowerCase()) continue;
+    if (String(data[i][col('Patch Test OK') - 1]) !== 'Yes') continue;
+    const when = new Date(fmtDate(data[i][2]) + 'T00:00:00');
+    if (when >= cutoff && hoursUntil(b.date, b.time) >= CONFIG.patchTest.minHoursBefore) {
+      return { ok: true, required: true };
+    }
+  }
+  return {
+    ok: false,
+    required: true,
+    message: 'A ' + b.treatmentName + ' needs a patch test at least ' +
+             CONFIG.patchTest.minHoursBefore + ' hours beforehand, and we have not got a current one ' +
+             'for you. Book a patch test first and we will hold this slot for you while you do.'
+  };
+}
+
+/* ============================================================
+   CONTRAINDICATION FLAGGING
+   ------------------------------------------------------------
+   Never an automatic refusal. It puts what the client wrote in
+   front of the practitioner before she walks into the room.
+   ============================================================ */
+
+function flagContraindications(text) {
+  const t = String(text || '').toLowerCase();
+  if (!t) return [];
+  const hits = [];
+  CONFIG.flagTerms.forEach(function (term) {
+    if (t.indexOf(term) !== -1 && hits.indexOf(term) === -1) hits.push(term);
+  });
+  return hits;
+}
+
+function alertFlags(b, id, flags) {
+  send(CONFIG.ownerEmail, 'Read before this appointment — ' + b.firstName + ' ' + (b.lastName || ''),
+    shell('Something to read first',
+      '<p><strong>' + b.firstName + ' ' + (b.lastName || '') + '</strong> — ' + b.treatmentName +
+      ', ' + prettyDate(b.date) + ' at ' + b.time + '.</p>' +
+      '<p>Their notes mention:</p>' + bullets(flags) +
+      '<p>Their own words:</p><blockquote style="border-left:3px solid #ddd;padding-left:12px;color:#444">' +
+      String(b.notes || '').replace(/</g, '&lt;') + '</blockquote>' +
+      '<p style="font-size:13px;color:#666">Flagged automatically for you to read. No decision has been made ' +
+      'and the appointment stands. Reference ' + id + '.</p>'));
+  log('FLAG', id + ' ' + flags.join(', '));
+}
+
+/* ============================================================
+   WAITLIST
+   ------------------------------------------------------------
+   The automation that turns a cancellation back into a booking.
+   Offers go out one at a time, in priority order, each with a
+   window that expires — so the slot keeps moving down the list on
+   its own until somebody takes it.
+   ============================================================ */
+
+function joinWaitlist(b) {
+  if (!b.email || !b.treatmentId) return { ok: false, error: 'Missing details' };
+  sheet(SHEETS.waitlist).appendRow([
+    new Date(), b.firstName || '', b.email, b.phone || '',
+    b.treatmentId, b.treatmentName || '', b.duration || 30,
+    b.date || '', b.flexibility || 'day', 'Waiting', '', '', ''
+  ]);
+  send(b.email, 'You are on the waitlist — ' + CONFIG.clinicName,
+    shell('On the list',
+      '<p>Hello ' + (b.firstName || '') + ',</p>' +
+      '<p>You are waiting on <strong>' + (b.treatmentName || 'a treatment') + '</strong>' +
+      (b.flexibility === 'day' ? ' for ' + prettyDate(b.date) : '') + '.</p>' +
+      '<p>If somebody cancels you will hear within seconds. You will have ' +
+      CONFIG.waitlist.claimMinutes + ' minutes to take the slot before it passes to the next person, ' +
+      'so it is worth keeping an eye on your phone.</p>' +
+      '<p>Nothing is booked and nothing is owed.</p>'));
+  log('WAITLIST', 'joined ' + b.email + ' ' + b.treatmentId + ' ' + (b.flexibility || 'day'));
+  return { ok: true };
+}
+
+/** Cancel a booking and immediately put the hour back on the market. */
+function cancelBooking(b) {
+  const sh = sheet(SHEETS.bookings);
+  const data = sh.getDataRange().getValues();
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0] !== b.bookingId) continue;
+    const hrs = hoursUntil(data[i][2], data[i][3]);
+    sh.getRange(i + 1, 14).setValue(hrs < 48 ? 'Late Cancel' : 'Cancelled');
+    try { if (data[i][14]) CalendarApp.getCalendarById(CONFIG.calendarId).getEventById(data[i][14]).deleteEvent(); }
+    catch (ignore) {}
+    log('CANCEL', b.bookingId + ' ' + (hrs < 48 ? 'late' : 'in time'));
+    releaseSlot({ date: fmtDate(data[i][2]), time: fmtTime(data[i][3]),
+                  treatmentId: data[i][4], treatmentName: data[i][5], duration: data[i][6], price: data[i][7] });
+    return { ok: true };
+  }
+  return { ok: false, error: 'Booking not found' };
+}
+
+/** Offer a freed slot to the best-matching person still waiting. */
+function releaseSlot(slot) {
+  const sh = sheet(SHEETS.waitlist);
+  const data = sh.getDataRange().getValues();
+  const candidates = [];
+
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][9] !== 'Waiting') continue;
+    if (data[i][4] !== slot.treatmentId) continue;
+    const flex = data[i][8];
+    const target = fmtDate(data[i][7]);
+    let rank;
+    if (flex === 'day' && target === slot.date)                 rank = 1;   // wants this exact day
+    else if (flex === 'week' && sameWeek(target, slot.date))     rank = 2;
+    else if (flex === 'any')                                     rank = 3;
+    else continue;
+    candidates.push({ row: i + 1, rank: rank, joined: new Date(data[i][0]), r: data[i] });
+  }
+
+  // Best match first; within a rank, whoever has waited longest.
+  candidates.sort(function (a, b) { return a.rank - b.rank || a.joined - b.joined; });
+  if (!candidates.length) {
+    send(CONFIG.ownerEmail, 'A slot opened and the waitlist is empty',
+      shell('Nobody waiting', '<p>' + slot.treatmentName + ' on ' + prettyDate(slot.date) +
+        ' at ' + slot.time + ' is free and there is nobody on the waitlist for it.</p>'));
+    return;
+  }
+  offerSlot(candidates[0], slot);
+}
+
+function offerSlot(cand, slot) {
+  const sh    = sheet(SHEETS.waitlist);
+  const token = Utilities.getUuid();
+  const until = new Date(Date.now() + CONFIG.waitlist.claimMinutes * 60000);
+
+  sh.getRange(cand.row, 10).setValue('Offered');
+  sh.getRange(cand.row, 11).setValue(new Date());
+  sh.getRange(cand.row, 12).setValue(until);
+  sh.getRange(cand.row, 13).setValue(token + '|' + JSON.stringify(slot));
+
+  const url = ScriptApp.getService().getUrl() + '?action=claim&token=' + token;
+  send(cand.r[2], 'A ' + slot.treatmentName + ' has just come free',
+    shell('It is yours if you want it',
+      '<p>Hello ' + cand.r[1] + ',</p>' +
+      '<p><strong>' + slot.treatmentName + '</strong> on <strong>' + prettyDate(slot.date) +
+      ' at ' + slot.time + '</strong> has just come free.</p>' +
+      '<p>You are first in line. The slot is held for you for ' + CONFIG.waitlist.claimMinutes +
+      ' minutes, then it passes to the next person waiting.</p>' +
+      button('Take this appointment', url) +
+      '<p style="font-size:13px;color:#666">If it is no good, do nothing and we will keep you on the list.</p>'));
+  log('WAITLIST', 'offered ' + slot.date + ' ' + slot.time + ' to ' + cand.r[2]);
+}
+
+/** Expire offers nobody took, and pass the slot down the list. */
+function workWaitlist() {
+  const sh   = sheet(SHEETS.waitlist);
+  const data = sh.getDataRange().getValues();
+  const now  = new Date();
+
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][9] !== 'Offered') continue;
+    const expires = data[i][11] ? new Date(data[i][11]) : null;
+    if (!expires || expires > now) continue;
+
+    sh.getRange(i + 1, 10).setValue('Passed');
+    const payload = String(data[i][12] || '').split('|');
+    if (payload.length < 2) continue;
+    let slot; try { slot = JSON.parse(payload[1]); } catch (e) { continue; }
+
+    // Still free? Then it goes to whoever is next.
+    if (availableSlots(slot.date, Number(slot.duration)).indexOf(slot.time) !== -1) {
+      log('WAITLIST', 'offer expired, moving on: ' + slot.date + ' ' + slot.time);
+      releaseSlot(slot);
+    }
+  }
+}
+
+/** Somebody clicked the claim link. First one in wins. */
+function claimSlot(b) {
+  const lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(20000);
+    const sh = sheet(SHEETS.waitlist);
+    const data = sh.getDataRange().getValues();
+
+    for (let i = 1; i < data.length; i++) {
+      const cell = String(data[i][12] || '');
+      if (cell.indexOf(b.token + '|') !== 0) continue;
+      if (data[i][9] !== 'Offered') return { ok: false, message: 'That offer has already been used.' };
+      if (new Date(data[i][11]) < new Date()) return { ok: false, message: 'That offer ran out. You are still on the list.' };
+
+      const slot = JSON.parse(cell.split('|')[1]);
+      if (availableSlots(slot.date, Number(slot.duration)).indexOf(slot.time) === -1) {
+        sh.getRange(i + 1, 10).setValue('Passed');
+        return { ok: false, message: 'Somebody got there first. You are still on the list.' };
+      }
+
+      const booking = {
+        firstName: data[i][1], lastName: '', email: data[i][2], phone: data[i][3],
+        treatmentId: slot.treatmentId, treatmentName: slot.treatmentName,
+        duration: slot.duration, price: slot.price,
+        date: slot.date, time: slot.time, notes: 'Claimed from the waitlist'
+      };
+      const id = 'BK' + Utilities.formatDate(new Date(), CONFIG.timezone, 'yyMMdd') + '-' +
+                 Math.random().toString(36).slice(2, 6).toUpperCase();
+      const ev = createCalendarEvent(booking, id);
+
+      sheet(SHEETS.bookings).appendRow([
+        id, new Date(), booking.date, booking.time, booking.treatmentId, booking.treatmentName,
+        booking.duration, booking.price, booking.firstName, booking.lastName, booking.email,
+        booking.phone, booking.notes, 'Confirmed', ev,
+        '', '', '', '', '', '', '', rebookDueDate(booking.treatmentId, booking.date, booking.email),
+        0, '', 'N/A', '', ''
+      ]);
+
+      sh.getRange(i + 1, 10).setValue('Booked');
+      sendConfirmation(booking, id);
+      markSent(id, 'Confirmation Sent');
+      notifyOwner(booking, id);
+      log('WAITLIST', 'claimed ' + slot.date + ' ' + slot.time + ' by ' + booking.email);
+      return { ok: true, message: 'Booked. Your confirmation and medical history form are on their way.' };
+    }
+    return { ok: false, message: 'We could not find that offer.' };
+  } finally {
+    try { lock.releaseLock(); } catch (ignore) {}
+  }
+}
+
+/* ============================================================
+   ABANDONED BOOKINGS
+   ------------------------------------------------------------
+   Someone who picked a treatment and a time but did not confirm
+   has told you almost everything. Following up with the slot they
+   were looking at costs nothing.
+   ============================================================ */
+
+function recordLead(b) {
+  if (!b.email) return { ok: false };
+  sheet(SHEETS.leads).appendRow([
+    new Date(), b.firstName || '', b.email, b.phone || '',
+    b.treatmentId || '', b.treatmentName || '', b.date || '', b.time || '', 'Open', ''
+  ]);
+  return { ok: true };
+}
+
+function clearLead(email) {
+  const sh = sheet(SHEETS.leads);
+  const data = sh.getDataRange().getValues();
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][2]).toLowerCase() === String(email).toLowerCase() && data[i][8] === 'Open') {
+      sh.getRange(i + 1, 9).setValue('Booked');
+    }
+  }
+}
+
+function chaseLeads() {
+  const sh = sheet(SHEETS.leads);
+  const data = sh.getDataRange().getValues();
+
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][8] !== 'Open') continue;
+    const hrs = (Date.now() - new Date(data[i][0]).getTime()) / 3600e3;
+    const chased = Number(data[i][9] || 0);
+
+    if (chased === 0 && hrs >= 3) {
+      const stillFree = data[i][6] &&
+        availableSlots(fmtDate(data[i][6]), 30).indexOf(fmtTime(data[i][7])) !== -1;
+      send(data[i][2], 'Your ' + data[i][5] + ' appointment is still available',
+        shell('Still there if you want it',
+          '<p>Hello ' + data[i][1] + ',</p>' +
+          '<p>You were looking at <strong>' + data[i][5] + '</strong> on <strong>' +
+          prettyDate(fmtDate(data[i][6])) + ' at ' + fmtTime(data[i][7]) + '</strong>' +
+          (stillFree ? ', and it is still free.' : '. That one has gone, but there are others.') + '</p>' +
+          button('Finish booking', CONFIG.websiteUrl) +
+          '<p>If you had a question you did not want to put in a form, just reply to this. ' +
+          'It reaches ' + CONFIG.practitioner + ' directly.</p>'));
+      sh.getRange(i + 1, 10).setValue(1);
+
+    } else if (chased === 1 && hrs >= 96) {
+      send(data[i][2], 'The next two openings for ' + data[i][5],
+        shell('Two dates that are free',
+          '<p>Hello ' + data[i][1] + ',</p>' +
+          '<p>No pressure at all — here are the next two openings for <strong>' +
+          data[i][5] + '</strong> in case the timing is better.</p>' +
+          bullets(nextOpenings(data[i][4], 2)) +
+          button('Book one', CONFIG.websiteUrl) +
+          '<p style="font-size:13px;color:#666">This is the last we will send about it.</p>'));
+      sh.getRange(i + 1, 9).setValue('Closed');
+      sh.getRange(i + 1, 10).setValue(2);
+    }
+  }
+}
+
+/** The next `n` bookable slots for a treatment, as readable lines. */
+function nextOpenings(treatmentId, n) {
+  const out = [];
+  const dur = 45;
+  for (let d = 1; d <= 45 && out.length < n; d++) {
+    const day = new Date(); day.setDate(day.getDate() + d);
+    const ds = Utilities.formatDate(day, CONFIG.timezone, 'yyyy-MM-dd');
+    const free = availableSlots(ds, dur);
+    if (free.length) out.push(prettyDate(ds) + ' at ' + free[0]);
+  }
+  return out.length ? out : ['Nothing free in the next six weeks — reply and we will sort something out'];
+}
+
+/* ============================================================
+   CONSULTATION FOLLOW-UP
+   ------------------------------------------------------------
+   The consultation is already paid for in chair time. This is
+   where that time either turns into a treatment or does not.
+   ============================================================ */
+
+function followUpConsults() {
+  const sh = sheet(SHEETS.bookings);
+  const data = sh.getDataRange().getValues();
+  const c = col('Consult Followed Up');
+
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][4] !== 'consultation') continue;
+    if (data[i][13] === 'Cancelled') continue;
+    const done = Number(data[i][c - 1] || 0);
+    if (done >= 3) continue;
+
+    const daysSince = -daysBetween(new Date(), fmtDate(data[i][2]));
+    if (daysSince < 2) continue;
+
+    // Did they book anything after the consultation?
+    if (bookedSince(data[i][10], fmtDate(data[i][2]))) { sh.getRange(i + 1, c).setValue(3); continue; }
+
+    const stage = daysSince >= 10 ? 3 : daysSince >= 5 ? 2 : 1;
+    if (stage <= done) continue;
+
+    const name = data[i][8];
+    const body =
+      stage === 1 ? '<p>Hello ' + name + ',</p><p>Good to meet you. Your written plan and the price we ' +
+                    'talked about are attached to your record, and nothing has changed about either.</p>' +
+                    '<p>If you want to go ahead, the booking page has the next openings.</p>'
+      : stage === 2 ? '<p>Hello ' + name + ',</p><p>No pressure at all. If something is holding you up — ' +
+                    'the price, the downtime, whether it is the right treatment — reply to this and ' +
+                    CONFIG.practitioner + ' will answer it herself.</p>'
+      :               '<p>Hello ' + name + ',</p><p>Last one from us about this. The plan stays on file, ' +
+                    'so whenever you are ready you can pick it up where we left it.</p>';
+
+    send(data[i][10], stage === 3 ? 'Leaving this with you' : 'After your consultation',
+      shell('Your consultation', body + button('See the next openings', CONFIG.websiteUrl)));
+    sh.getRange(i + 1, c).setValue(stage);
+    log('CONSULT', 'follow-up ' + stage + ' to ' + data[i][10]);
+  }
+}
+
+function bookedSince(email, afterDate) {
+  const data = sheet(SHEETS.bookings).getDataRange().getValues();
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][10]).toLowerCase() !== String(email).toLowerCase()) continue;
+    if (data[i][4] === 'consultation') continue;
+    if (new Date(data[i][1]) > new Date(afterDate + 'T00:00:00')) return true;
+  }
+  return false;
+}
+
+/* ============================================================
+   QUIET WEEKS
+   ------------------------------------------------------------
+   Demand pushed towards the empty days, rather than a discount
+   sent to everybody.
+   ============================================================ */
+
+function fillQuietWeek() {
+  let slots = 0, booked = 0;
+  const days = [];
+  for (let d = 1; d <= 7; d++) {
+    const day = new Date(); day.setDate(day.getDate() + d);
+    const ds = Utilities.formatDate(day, CONFIG.timezone, 'yyyy-MM-dd');
+    const h = CONFIG.hours[day.getDay()];
+    if (!h) continue;
+    const capacity = Math.floor((toMin(h.close) - toMin(h.open)) / 60);
+    const free = availableSlots(ds, 45).length;
+    slots += capacity; booked += Math.max(0, capacity - free);
+    if (free) days.push(prettyDate(ds) + ' — ' + free + ' free');
+  }
+  if (!slots) return;
+
+  const pct = Math.round(booked / slots * 100);
+  if (pct >= CONFIG.quiet.bookedBelowPercent) { log('QUIET', 'week is ' + pct + '% booked, no action'); return; }
+
+  const lapsed = lapsedClients(CONFIG.quiet.lapsedAfterWeeks).slice(0, CONFIG.quiet.maxOffers);
+  lapsed.forEach(function (c) {
+    send(c.email, 'A few appointments free this week',
+      shell('This week is quiet',
+        '<p>Hello ' + c.name + ',</p>' +
+        '<p>It has been a little while. There are some appointments free this week if the timing suits:</p>' +
+        bullets(days) +
+        button('Book one', CONFIG.websiteUrl) +
+        '<p style="font-size:13px;color:#666">No offer attached and no discount — just the openings.</p>'));
+  });
+  log('QUIET', 'week ' + pct + '% booked, offered to ' + lapsed.length + ' lapsed clients');
+}
+
+function lapsedClients(weeks) {
+  const data = sheet(SHEETS.bookings).getDataRange().getValues();
+  const seen = {};
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][13] === 'Cancelled') continue;
+    const email = String(data[i][10]).toLowerCase();
+    const d = fmtDate(data[i][2]);
+    if (!seen[email] || d > seen[email].last) seen[email] = { name: data[i][8], email: data[i][10], last: d };
+  }
+  const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - weeks * 7);
+  return Object.keys(seen)
+    .map(function (k) { return seen[k]; })
+    .filter(function (c) { return new Date(c.last + 'T00:00:00') < cutoff; });
+}
+
+/* ============================================================
+   STOCK AND EXPIRY
+   ------------------------------------------------------------
+   Toxin and filler have shelf lives. Product thrown away unopened
+   is money already spent.
+   ============================================================ */
+
+function forecastStock() {
+  const need = {};
+  const horizon = CONFIG.stock.reorderLeadDays;
+
+  eachBooking(function (r) {
+    const d = fmtDate(r[2]);
+    const days = daysBetween(new Date(), d);
+    if (days < 0 || days > horizon) return;
+    const c = CONFIG.consumables[r[4]];
+    if (!c) return;
+    need[c.item] = (need[c.item] || 0) + c.units;
+  });
+
+  const sh = sheet(SHEETS.stock);
+  const data = sh.getDataRange().getValues();
+  const short = [], expiring = [];
+
+  for (let i = 1; i < data.length; i++) {
+    const item = data[i][0];
+    const onHand = Number(data[i][1] || 0);
+    const required = need[item] || 0;
+    if (required > onHand) {
+      short.push(item + ' — ' + onHand + ' left, ' + required + ' needed in the next ' + horizon + ' days');
+    }
+    if (data[i][3]) {
+      const days = daysBetween(new Date(), fmtDate(data[i][3]));
+      if (days >= 0 && days <= CONFIG.stock.expiryWarnDays) {
+        expiring.push(item + ' — expires in ' + days + ' days, ' + onHand + ' on hand' +
+                      (required < onHand ? ' and only ' + required + ' booked for' : ''));
+      }
+    }
+  }
+
+  if (!short.length && !expiring.length) { log('STOCK', 'nothing to flag'); return; }
+  send(CONFIG.ownerEmail, 'Stock — ' + (short.length ? short.length + ' to reorder' : '') +
+       (short.length && expiring.length ? ', ' : '') + (expiring.length ? expiring.length + ' expiring' : ''),
+    shell('Stock',
+      (short.length ? '<h3 style="font-size:15px">Running short</h3>' + bullets(short) : '') +
+      (expiring.length ? '<h3 style="font-size:15px">Expiring soon</h3>' + bullets(expiring) : '') +
+      '<p style="font-size:13px;color:#666">Forecast from the appointments already in the diary for the ' +
+      'next ' + horizon + ' days.</p>'));
+  log('STOCK', short.length + ' short, ' + expiring.length + ' expiring');
+}
+
+/* ============================================================
+   SHARED HELPERS
+   ============================================================ */
+
+function daysBetween(from, to) {
+  const a = (from instanceof Date) ? from : new Date(fmtDate(from) + 'T00:00:00');
+  const b = (to   instanceof Date) ? to   : new Date(fmtDate(to)   + 'T00:00:00');
+  return Math.round((b.setHours(0,0,0,0) - a.setHours(0,0,0,0)) / 864e5);
+}
+
+function sameWeek(a, b) {
+  if (!a || !b) return false;
+  const da = new Date(fmtDate(a) + 'T00:00:00');
+  const db = new Date(fmtDate(b) + 'T00:00:00');
+  const monday = function (d) { const x = new Date(d); const k = (x.getDay() + 6) % 7; x.setDate(x.getDate() - k); return x.toDateString(); };
+  return monday(da) === monday(db);
 }

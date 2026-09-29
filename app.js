@@ -71,16 +71,18 @@ function renderGallery() {
 
   box.innerHTML = g.map(s => `
     <figure class="shot">
-      <img src="${s.src}" alt="" loading="lazy" onerror="this.remove()">
+      <img src="${s.src}" alt="${s.tag} being carried out at the clinic" loading="lazy" decoding="async"
+           onerror="this.closest('figure').remove()">
       <figcaption class="shot__tag">${s.tag}</figcaption>
     </figure>`).join("");
 
-  // Never label stock imagery as real client results.
+  // These are photographs of treatment in progress. They are never
+  // labelled as before-and-after results, because they are not.
   if (ph) {
-    $("#galleryTitle").textContent = "The look and feel.";
+    $("#galleryTitle").textContent = "Inside the room.";
     $("#galleryLede").textContent =
-      "Placeholder imagery for this demo. On a live clinic site this section holds real " +
-      "before-and-after photographs — same lighting, same angle, shared with written consent.";
+      "Treatment photography, not before-and-after. Results photographs go here once the " +
+      "clinic has them — same lighting, same angle, same camera, shared with written consent.";
   }
 }
 
@@ -227,8 +229,49 @@ function openModal(treatmentId) {
   document.body.style.overflow = "hidden";
 }
 function closeModal() {
+  captureAbandoned();
   modal.classList.remove("is-open");
   document.body.style.overflow = "";
+}
+
+/* ------------------------------------------------------------
+   Abandoned booking capture.
+
+   Someone who has chosen a treatment, a date and a time and typed
+   their email has told us almost everything. If they then leave
+   without confirming, that is recorded once so the engine can
+   follow up with the exact slot they were looking at.
+
+   Nothing is recorded unless they typed an email themselves, and
+   nothing is recorded once the booking is actually confirmed.
+   ------------------------------------------------------------ */
+let abandonSent = false;
+
+function captureAbandoned() {
+  if (abandonSent) return;
+  if (B.step < 4 || B.step === 5) return;          // not far enough in, or already booked
+  if (!B.treatment || !B.date || !B.time) return;
+
+  const email = ($("#fEmail") || {}).value ? $("#fEmail").value.trim() : "";
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return;
+
+  abandonSent = true;
+  const payload = {
+    action: "abandon",
+    firstName: ($("#fName") || {}).value || "",
+    email: email,
+    phone: ($("#fPhone") || {}).value || "",
+    treatmentId: B.treatment.id,
+    treatmentName: B.treatment.name,
+    date: B.date,
+    time: B.time
+  };
+
+  if (CLINIC.isDemoMode()) { console.info("[demo] abandoned booking captured", payload); return; }
+  try {
+    // keepalive so it still goes if the tab is closing
+    fetch(CLINIC.booking.webAppUrl, { method: "POST", body: JSON.stringify(payload), keepalive: true });
+  } catch (e) { /* never block the close on this */ }
 }
 
 function wireBookButtons() {
@@ -248,6 +291,7 @@ const LABELS = {
   5: "Confirmed"
 };
 function paint() {
+  btnNext.hidden = false;   // the waitlist hides it; every other step needs it
   $$(".pane").forEach(p => p.classList.toggle("is-active", +p.dataset.pane === B.step));
   $$(".step-dot").forEach((d, i) => d.classList.toggle("is-done", i < Math.min(B.step, 4)));
   $("#sheetSub").textContent = LABELS[B.step];
@@ -362,7 +406,13 @@ function demoSlots(dateStr, duration) {
   const out  = [];
   // Busier the sooner it is, quieter further out — reads like a real diary.
   const daysOut = Math.max(0, Math.round((d - new Date().setHours(0,0,0,0)) / 864e5));
-  const freeRate = Math.min(0.78, 0.34 + daysOut * 0.035);
+
+  // The first few open days are full. A sought-after clinic is booked a
+  // week out, and it is what puts the waitlist in front of the visitor
+  // rather than hiding it behind a rare empty day.
+  if (daysOut <= 3) return [];
+
+  const freeRate = Math.min(0.78, 0.30 + (daysOut - 3) * 0.045);
 
   for (let m = toMin(h.open); m + duration <= toMin(h.close); m += 30) {
     if (rnd() < freeRate) out.push(toHHMM(m));
@@ -394,13 +444,15 @@ async function loadSlots() {
     return;
   }
 
+  /* A full day is not a dead end. It is the front door to the waitlist,
+     which is the automation that refills cancellations. */
   if (!slots.length) {
-    area.innerHTML = `<p class="slots-empty">No availability on ${pretty}.<br>Try another date.</p>`;
+    renderWaitlist(area, pretty);
     return;
   }
 
   area.innerHTML = `
-    <div class="notice">${pretty} · ${B.treatment.name} · ${formatDuration(B.treatment.duration)}</div>
+    <div class="notice">${pretty}, ${B.treatment.name}, ${formatDuration(B.treatment.duration)}</div>
     <div class="slots">${slots.map(s => `<button class="slot" data-t="${s}">${s}</button>`).join("")}</div>`;
 
   $$(".slot", area).forEach(b => b.addEventListener("click", () => {
@@ -472,6 +524,7 @@ async function submitBooking() {
   $("#doneLine").textContent = `${B.treatment.name} — ${pretty} at ${B.time}`;
   $("#formLink").href = CLINIC.forms.medicalHistory;
   $("#sheetTitle").textContent = "Appointment confirmed";
+  abandonSent = true;               // confirmed, so never chase it as abandoned
   B.step = 5; paint();
   btnNext.textContent = "Confirm booking";
 }
@@ -493,7 +546,7 @@ $("#calPrev").addEventListener("click", () => { B.cursor.setMonth(B.cursor.getMo
 $("#calNext").addEventListener("click", () => { B.cursor.setMonth(B.cursor.getMonth() + 1); buildCalendar(); });
 
 /* ============================================================
-   6 · CHROME — nav, reveal
+   6 · CHROME — nav
    ============================================================ */
 function chrome() {
   const nav = $("#nav");
@@ -507,10 +560,9 @@ function chrome() {
   });
   $$("#navLinks a").forEach(a => a.addEventListener("click", () => nav.classList.remove("is-open")));
 
-  const io = new IntersectionObserver(entries => {
-    entries.forEach(en => { if (en.isIntersecting) { en.target.classList.add("is-in"); io.unobserve(en.target); } });
-  }, { threshold: 0.08, rootMargin: "0px 0px -40px 0px" });
-  $$(".reveal").forEach(el => io.observe(el));
+  /* No blanket scroll-reveal. Every section is legible the moment the
+     page loads; the only entrance on the page is the hero, and it is
+     done in CSS. */
 }
 
 /* ============================================================
@@ -604,3 +656,298 @@ renderAftercare();
 wireBookButtons();
 chrome();
 initChat();
+
+/* ============================================================
+   7 · THE ENGINE — automation catalogue
+   ------------------------------------------------------------
+   Reads automations.js. Nothing here is hand-written per item, so
+   adding an automation to the catalogue adds it to the page.
+   ============================================================ */
+
+const CAT = { group: "all" };
+
+function renderAutomations() {
+  const list = $("#catList");
+  if (!list || typeof AUTOMATIONS === "undefined") return;
+
+  /* --- group filters --- */
+  const filters = $("#catFilters");
+  const groups  = [{ id: "all", label: "Everything" }, ...AUTOMATION_GROUPS];
+  filters.innerHTML = groups.map(g =>
+    `<button type="button" data-group="${g.id}" aria-pressed="${g.id === CAT.group}">${g.label}</button>`
+  ).join("");
+  filters.addEventListener("click", e => {
+    const b = e.target.closest("button[data-group]");
+    if (!b) return;
+    CAT.group = b.dataset.group;
+    $$("button[data-group]", filters).forEach(x =>
+      x.setAttribute("aria-pressed", String(x.dataset.group === CAT.group)));
+    paintCatalogue();
+  });
+
+  paintCatalogue();
+
+  /* --- footnote: how many ship on their own --- */
+  const standalone = AUTOMATIONS.filter(a => a.standalone).length;
+  $("#catNote").textContent =
+    `${standalone} of these ${AUTOMATIONS.length} run on their own, on top of whatever booking ` +
+    `system a clinic already uses. The rest need the diary underneath them and ship with it.`;
+}
+
+function paintCatalogue() {
+  const showFees = !!(CLINIC.commercial && CLINIC.commercial.showFees);
+  const rows = CAT.group === "all" ? AUTOMATIONS : automationsIn(CAT.group);
+
+  $("#catList").innerHTML = rows.map(a => `
+    <article class="cat__row">
+      <div>
+        <div class="cat__name">${a.name}</div>
+        <span class="cat__when">${a.when}</span>
+      </div>
+      <div>
+        <p class="cat__does">${a.does}</p>
+        <p class="cat__pay">${a.payoff}</p>
+      </div>
+      <div class="cat__side">
+        <ul class="cat__needs">${(a.needs || []).map(n => `<li>${n}</li>`).join("")}</ul>
+        ${a.standalone
+          ? `<span class="cat__tag">Sold on its own</span>
+             ${showFees && a.fee ? `<span class="cat__fee">${a.fee} one-off</span>` : ""}`
+          : `<span class="cat__tag" data-bundled>Ships with the booking system</span>`}
+      </div>
+    </article>`).join("");
+}
+
+/* ============================================================
+   8 · THE REFILL SEQUENCE
+   ------------------------------------------------------------
+   The one piece of choreographed motion on the page. It plays the
+   waitlist automation honestly: the first person on the list does
+   not reply, so the slot moves down the list on its own. That
+   cascade is the whole point of the automation, so it is what the
+   animation shows.
+
+   The widget is fully legible before it plays. Nothing is hidden
+   waiting on an observer.
+   ============================================================ */
+
+function initRefill() {
+  const root = $("#refill");
+  if (!root) return;
+
+  const play  = $("#refillPlay");
+  const slot  = $("#refillSlot");
+  const who   = $("#slotWho");
+  const state = $("#slotState");
+  const say   = $("#refillSay");
+  const held  = $("#statHeld");
+  const time  = $("#statTime");
+  const rows  = id => $(`.wl__row[data-wl="${id}"]`);
+
+  const calm = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const wait = ms => new Promise(r => setTimeout(r, calm ? Math.min(ms, 220) : ms));
+
+  const setRow = (n, st, label) => {
+    const r = rows(n); if (!r) return;
+    r.dataset.state = st;
+    $("[data-stat]", r).textContent = label;
+  };
+
+  function reset() {
+    slot.dataset.state = "booked";
+    who.textContent = "Marianne Okafor";
+    state.textContent = "Confirmed";
+    held.textContent = "£420"; held.removeAttribute("data-flash");
+    time.textContent = "—";
+    [1, 2, 3, 4].forEach(n => setRow(n, "waiting", "Waiting"));
+    say.innerHTML = "The appointment is confirmed and the waitlist is idle. Press the button to cancel it.";
+  }
+
+  async function run() {
+    play.setAttribute("data-running", "");
+    play.textContent = "Running…";
+
+    /* 1 — the cancellation */
+    slot.dataset.state = "cancelled";
+    state.textContent = "Cancelled";
+    held.textContent = "£0";
+    say.innerHTML = "<strong>Marianne cancels at 11:04.</strong> Under the old system this is now an empty hour on Thursday, and nobody finds out until the day.";
+    await wait(2200);
+
+    /* 2 — the engine starts hunting */
+    slot.dataset.state = "hunting";
+    state.textContent = "Refilling";
+    say.innerHTML = "The slot is released to the waitlist automatically. Nobody at the clinic has touched anything.";
+    await wait(1500);
+
+    /* 3 — first in line, because she wants this exact treatment */
+    setRow(1, "notified", "Offered · 20 min");
+    say.innerHTML = "<strong>Priya is asked first</strong> — she is waiting for this exact treatment. She gets a link that expires in twenty minutes.";
+    await wait(2400);
+
+    /* 4 — she doesn't take it, so it moves down on its own */
+    setRow(1, "passed", "No reply");
+    setRow(2, "notified", "Offered · 20 min");
+    say.innerHTML = "Twenty minutes pass with no reply, so the offer moves down the list on its own. <strong>Joanne is next</strong> — she wants any Thursday evening.";
+    await wait(2600);
+
+    /* 5 — claimed */
+    setRow(2, "claimed", "Claimed");
+    say.innerHTML = "<strong>Joanne takes it.</strong> Her confirmation, her medical history form and her prep instructions all go out on the same schedule as any other booking.";
+    await wait(1400);
+
+    /* 6 — the slot is whole again */
+    slot.dataset.state = "refilled";
+    state.textContent = "Confirmed";
+    who.textContent = "Joanne Whitfield";
+    held.textContent = "£420";
+    held.setAttribute("data-flash", "");
+    time.textContent = "41 min";
+    setRow(3, "waiting", "Still waiting");
+    setRow(4, "waiting", "Still waiting");
+    say.innerHTML = "<strong>The hour is booked again, forty-one minutes after it was lost.</strong> The practitioner was with a client for all of it and sent nothing.";
+
+    play.removeAttribute("data-running");
+    play.textContent = "Run it again";
+  }
+
+  play.addEventListener("click", () => { reset(); requestAnimationFrame(run); });
+
+  /* Play once, unprompted, the first time it is properly on screen —
+     but only after the reader has had a moment to read the resting
+     state, and never for someone who has asked for less motion. */
+  if (!calm && "IntersectionObserver" in window) {
+    let done = false;
+    const io = new IntersectionObserver(entries => {
+      entries.forEach(en => {
+        if (!en.isIntersecting || done) return;
+        done = true; io.disconnect();
+        setTimeout(run, 900);
+      });
+    }, { threshold: 0.45 });
+    io.observe(root);
+  }
+}
+
+/* These two live at the end because their state is declared below the
+   original boot block, and a `const` cannot be touched before it is
+   initialised. */
+renderAutomations();
+initRefill();
+
+/* ============================================================
+   9 · WAITLIST
+   ------------------------------------------------------------
+   Shown instead of "try another date" when a day is full. This is
+   the client-facing half of the waitlist automation: the list this
+   form writes to is the list the engine works down when somebody
+   cancels.
+   ============================================================ */
+
+function renderWaitlist(area, pretty) {
+  // No Continue on this step. The waitlist has its own action, and a
+  // permanently disabled button is a dead end the visitor has to guess at.
+  btnNext.hidden = true;
+  area.innerHTML = `
+    <div class="wlist">
+      <div class="wlist__top">
+        <h4>${pretty} is full.</h4>
+        <p class="muted">
+          Join the waitlist and you will be offered this day the moment somebody moves.
+          Most cancellations come in the day before, and the first person who can take
+          the slot gets it.
+        </p>
+      </div>
+
+      <fieldset class="wlist__flex">
+        <legend>How flexible are you?</legend>
+        <label><input type="radio" name="wlFlex" value="day" checked>
+          <span><strong>This day only</strong><em>You are offered cancellations on ${pretty}</em></span></label>
+        <label><input type="radio" name="wlFlex" value="week">
+          <span><strong>That week</strong><em>Any day in the same week</em></span></label>
+        <label><input type="radio" name="wlFlex" value="any">
+          <span><strong>Any time</strong><em>First cancellation for this treatment, whenever it falls</em></span></label>
+      </fieldset>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="wlName">First name</label>
+          <input id="wlName" autocomplete="given-name">
+        </div>
+        <div class="field">
+          <label for="wlPhone">Mobile</label>
+          <input id="wlPhone" type="tel" autocomplete="tel" placeholder="07…">
+        </div>
+      </div>
+      <div class="field">
+        <label for="wlEmail">Email</label>
+        <input id="wlEmail" type="email" autocomplete="email">
+      </div>
+
+      <div class="err" id="wlErr" hidden></div>
+      <button class="btn btn--gold btn--block" id="wlGo" type="button">Join the waitlist</button>
+      <p class="wlist__small muted2">
+        You are only contacted about this treatment, and every offer expires so the slot
+        keeps moving. One tap removes you.
+      </p>
+    </div>`;
+
+  $("#wlGo").addEventListener("click", () => joinWaitlist(area, pretty));
+}
+
+async function joinWaitlist(area, pretty) {
+  const err   = $("#wlErr");
+  const name  = $("#wlName").value.trim();
+  const email = $("#wlEmail").value.trim();
+  const phone = $("#wlPhone").value.trim();
+  const flex  = (document.querySelector("input[name=wlFlex]:checked") || {}).value || "day";
+  err.hidden = true;
+
+  if (!name || !email || !phone) {
+    err.textContent = "Please add your name, email and mobile."; err.hidden = false; return;
+  }
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+    err.textContent = "That email address doesn't look right."; err.hidden = false; return;
+  }
+
+  const go = $("#wlGo");
+  go.disabled = true; go.textContent = "Joining…";
+
+  try {
+    if (!CLINIC.isDemoMode()) {
+      await fetch(CLINIC.booking.webAppUrl, {
+        method: "POST",
+        body: JSON.stringify({
+          action: "waitlist",
+          firstName: name, email, phone, flexibility: flex,
+          treatmentId: B.treatment.id, treatmentName: B.treatment.name,
+          duration: B.treatment.duration, date: B.date
+        })
+      });
+    } else {
+      await new Promise(r => setTimeout(r, 700));
+    }
+  } catch (e) {
+    err.textContent = "Couldn't join the waitlist just now. Message us on WhatsApp and we'll add you by hand.";
+    err.hidden = false;
+    go.disabled = false; go.textContent = "Join the waitlist";
+    return;
+  }
+
+  const scope = flex === "day"  ? pretty
+              : flex === "week" ? "that week"
+              :                   "any date";
+  area.innerHTML = `
+    <div class="wlist wlist--done">
+      <h4>You're on the list.</h4>
+      <p class="muted">
+        You are waiting on <strong>${B.treatment.name}</strong> for <strong>${scope}</strong>.
+        If somebody cancels you will hear within seconds, and you will have twenty minutes
+        to take the slot before it passes to the next person.
+      </p>
+      <p class="muted2 wlist__small">Nothing is booked and nothing is owed.</p>
+    </div>`;
+}
+
+/* Leaving the page with the sheet open is the same as closing it. */
+window.addEventListener("pagehide", captureAbandoned);

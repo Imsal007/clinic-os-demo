@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#0B0A0A">
+<meta name="theme-color" content="#F1F2EE">
 <title>Aurelia Aesthetics — Quiet, considered aesthetics in Shoreditch</title>
 <meta name="description" content="Doctor-led aesthetic treatments in Shoreditch, London. Wrinkle relaxing, dermal filler, skin health. Book online in under a minute.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Chakra+Petch:wght@600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,300;6..72,400;6..72,500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -25,6 +25,7 @@
     <a href="#results">Results</a>
     <a href="#reviews">Why us</a>
     <a href="#aftercare">Aftercare</a>
+    <a href="#engine">The engine</a>
     <a href="#visit">Visit</a>
     <button class="btn btn--gold nav__cta" data-book>Book</button>
   </nav>
@@ -35,9 +36,9 @@
 
 <!-- ============ HERO ============ -->
 <section class="hero" id="top">
-  <div class="hero__text reveal">
-    <p class="eyebrow">Doctor-led · Shoreditch</p>
-    <h1>Look like <em class="hl">yourself</em>, on a good day.</h1>
+  <div class="hero__text">
+    <p class="eyebrow">Aesthetic medicine, Shoreditch</p>
+    <h1>Look like yourself, on a good day.</h1>
     <p class="lede" data-clinic="strapline">Subtle results from a practitioner who says no more often than yes.</p>
     <div class="hero__actions">
       <button class="btn btn--gold" data-book>Book an appointment</button>
@@ -45,23 +46,26 @@
     </div>
   </div>
 
-  <div class="hero__media reveal">
-    <img data-img="images.hero" alt="" onerror="this.remove()">
-  </div>
+  <figure class="hero__media">
+    <img data-img="images.hero" alt="Dr. Elena Marsh in the treatment room at Aurelia Aesthetics"
+         width="1000" height="1250" fetchpriority="high" onerror="this.closest('figure').remove()">
+  </figure>
 
-  <div class="promises reveal">
+  <!-- Three stages of an appointment. Labelled by stage rather than
+       numbered, because the label carries information a number does not. -->
+  <div class="promises">
     <div class="promise">
-      <div class="promise__n">01</div>
+      <div class="promise__n">Before you book</div>
       <h4>Consultation first</h4>
       <p>Every new client starts with a conversation, not a needle. It's free, and there's no obligation to book anything.</p>
     </div>
     <div class="promise">
-      <div class="promise__n">02</div>
+      <div class="promise__n">In the room</div>
       <h4>Honest answers</h4>
       <p>If a treatment won't get you where you want to go, you'll be told. Roughly one in five consultations ends in a no.</p>
     </div>
     <div class="promise">
-      <div class="promise__n">03</div>
+      <div class="promise__n">After you leave</div>
       <h4>Looked after afterwards</h4>
       <p>Prep notes before, aftercare after, and a two-week review built into every first treatment.</p>
     </div>
@@ -72,10 +76,10 @@
 <section class="section" id="about">
   <div class="wrap">
     <div class="split">
-      <div class="split__media reveal">
+      <div class="split__media">
         <img data-img="images.practitioner" alt="" onerror="this.remove()">
       </div>
-      <div class="reveal">
+      <div>
         <p class="eyebrow">The practitioner</p>
         <h2 data-clinic="practitioner.name">Dr. Elena Marsh</h2>
         <p class="creds" data-clinic="practitioner.credentials">MBBS · GMC Registered · Level 7 Aesthetics</p>
@@ -102,63 +106,190 @@
 <!-- ============ TREATMENTS ============ -->
 <section class="section band" id="treatments">
   <div class="wrap">
-    <div class="reveal">
+    <div>
       <p class="eyebrow">Treatments</p>
       <h2>Everything, with the price next to it.</h2>
       <p class="lede" style="margin-top:1.2rem">No packages you have to ask about. Prices below are what you pay in clinic.
         Not sure where to start? Book a consultation — it costs nothing.</p>
     </div>
 
-    <div class="filters reveal" id="filters"></div>
-    <div class="menu reveal" id="menu"></div>
+    <div class="filters" id="filters"></div>
+    <div class="menu" id="menu"></div>
 
-    <p class="muted reveal" style="margin-top:2rem;font-size:.88rem" data-clinic="policy.payment"></p>
+    <p class="muted" style="margin-top:2rem;font-size:.88rem" data-clinic="policy.payment"></p>
   </div>
 </section>
 
 <!-- ============ RESULTS ============ -->
 <section class="section" id="results">
   <div class="wrap">
-    <div class="reveal" style="margin-bottom:3rem">
+    <div style="margin-bottom:3rem">
       <p class="eyebrow">Results</p>
-      <h2 id="galleryTitle">Before and after, unretouched.</h2>
-      <p class="lede" style="margin-top:1.2rem" id="galleryLede">Same lighting, same angle, same camera. Shared with permission.</p>
+      <h2 id="galleryTitle">Inside the room.</h2>
+      <p class="lede" style="margin-top:1.2rem" id="galleryLede">Treatment photography, not before-and-after.</p>
     </div>
-    <div class="gallery reveal" id="gallery"></div>
+    <div class="gallery" id="gallery"></div>
   </div>
 </section>
 
 <!-- ============ REVIEWS ============ -->
 <section class="section band" id="reviews">
   <div class="wrap">
-    <div class="reveal" style="margin-bottom:3rem">
+    <div style="margin-bottom:3rem">
       <p class="eyebrow">Why us</p>
       <h2>What you're promised, in writing.</h2>
       <p class="lede" style="margin-top:1.2rem">Not a wall of five-star quotes. Three things this clinic
         commits to, that you can hold it to.</p>
     </div>
-    <div class="trust reveal" id="trust"></div>
+    <div class="trust" id="trust"></div>
   </div>
 </section>
 
 <!-- ============ AFTERCARE ============ -->
 <section class="section" id="aftercare">
   <div class="wrap">
-    <div class="reveal" style="margin-bottom:2.5rem">
+    <div style="margin-bottom:2.5rem">
       <p class="eyebrow">Aftercare</p>
       <h2>What to do before and after.</h2>
       <p class="lede" style="margin-top:1.2rem">You'll get these by email automatically — before your appointment and again
         the evening after. They're here too, so you can check any time.</p>
     </div>
-    <div class="acc reveal" id="aftercareAcc"></div>
+    <div class="acc-grid">
+      <div class="acc" id="aftercareAcc"></div>
+      <figure class="plate plate--tall">
+        <img data-img="images.tray" alt="A sterile tray laid out before treatment"
+             loading="lazy" decoding="async" onerror="this.closest('figure').remove()">
+        <figcaption>Single-use, laid out and checked in front of you.</figcaption>
+      </figure>
+    </div>
   </div>
 </section>
+
+<!-- ============ THE ENGINE ============
+     Owner-facing. This is the part of the demo that sells the system
+     to a clinic, and it is framed as such rather than pretending to
+     be client-facing copy. -->
+<section class="section engine" id="engine">
+  <div class="wrap">
+
+    <div class="engine__head">
+      <p class="eyebrow">For clinic owners</p>
+      <h2>The half of the clinic nobody sees.</h2>
+      <p class="lede">
+        Everything above this line is the website. Everything below it is the engine that runs
+        behind it — the confirmations, the reminders, the aftercare, and the thirteen other things
+        that would otherwise be somebody's job. It runs on a free Google account.
+      </p>
+    </div>
+
+    <!-- ---- The showpiece: a cancellation refilling itself ---- -->
+    <div class="refill" id="refill" aria-labelledby="refillTitle">
+      <div class="refill__head">
+        <div>
+          <h3 id="refillTitle">Watch a cancellation refill itself</h3>
+          <p class="muted refill__sub">
+            Thursday's late list. One appointment, four people waiting for it.
+          </p>
+        </div>
+        <button class="btn btn--gold refill__play" id="refillPlay" type="button">
+          Cancel the appointment
+        </button>
+      </div>
+
+      <div class="refill__body">
+
+        <!-- The slot -->
+        <div class="refill__slot" id="refillSlot" data-state="booked">
+          <div class="slot__time"><span class="num">14:30</span><span class="muted2">Thu 9 Oct</span></div>
+          <div class="slot__detail">
+            <div class="slot__tx">Cheek &amp; Midface Filler</div>
+            <div class="slot__who" id="slotWho">Marianne Okafor</div>
+          </div>
+          <div class="slot__val"><span class="num">£420</span></div>
+          <div class="slot__state" id="slotState">Confirmed</div>
+        </div>
+
+        <!-- The waitlist -->
+        <div class="refill__list" id="refillList">
+          <div class="wl__head">
+            <span>Waitlist, in priority order</span>
+            <span class="muted2">Why they rank</span>
+          </div>
+          <ol class="wl">
+            <li class="wl__row" data-wl="1">
+              <span class="wl__rank num">1</span>
+              <span class="wl__name">Priya Raman</span>
+              <span class="wl__why">Waiting for this exact treatment</span>
+              <span class="wl__stat" data-stat>Waiting</span>
+            </li>
+            <li class="wl__row" data-wl="2">
+              <span class="wl__rank num">2</span>
+              <span class="wl__name">Joanne Whitfield</span>
+              <span class="wl__why">Waiting for any Thursday evening</span>
+              <span class="wl__stat" data-stat>Waiting</span>
+            </li>
+            <li class="wl__row" data-wl="3">
+              <span class="wl__rank num">3</span>
+              <span class="wl__name">Dee Amankwah</span>
+              <span class="wl__why">Flexible on day and time</span>
+              <span class="wl__stat" data-stat>Waiting</span>
+            </li>
+            <li class="wl__row" data-wl="4">
+              <span class="wl__rank num">4</span>
+              <span class="wl__name">Harriet Lunn</span>
+              <span class="wl__why">Flexible, joined this morning</span>
+              <span class="wl__stat" data-stat>Waiting</span>
+            </li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- Running commentary — the line that explains what just happened -->
+      <p class="refill__say" id="refillSay" role="status" aria-live="polite">
+        The appointment is confirmed and the waitlist is idle. Press the button to cancel it.
+      </p>
+
+      <div class="refill__foot">
+        <div class="stat">
+          <span class="stat__k">Revenue held</span>
+          <strong class="stat__v num" id="statHeld">£420</strong>
+        </div>
+        <div class="stat">
+          <span class="stat__k">Time to refill</span>
+          <strong class="stat__v num" id="statTime">—</strong>
+        </div>
+        <div class="stat">
+          <span class="stat__k">Messages the owner sent</span>
+          <strong class="stat__v num" id="statOwner">0</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- ---- The full catalogue ---- -->
+    <div class="engine__cat">
+      <div class="cat__head">
+        <h3>Everything the engine does</h3>
+        <div class="cat__filters" id="catFilters"></div>
+      </div>
+      <div class="cat" id="catList"></div>
+      <p class="cat__note muted2" id="catNote"></p>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============ PLATE ============ -->
+<figure class="plate plate--wide">
+  <img data-img="images.room" alt="The treatment room at Aurelia Aesthetics"
+       loading="lazy" decoding="async" onerror="this.closest('figure').remove()">
+  <figcaption>The room on Redchurch Street. One chair, one practitioner, no waiting area.</figcaption>
+</figure>
 
 <!-- ============ VISIT ============ -->
 <section class="section band" id="visit">
   <div class="wrap">
     <div class="contact-grid">
-      <div class="reveal">
+      <div>
         <p class="eyebrow">Visit</p>
         <h2>Come and see us.</h2>
         <dl class="info-rows">
@@ -184,7 +315,7 @@
         <button class="btn btn--gold" data-book style="margin-top:2rem">Book an appointment</button>
       </div>
 
-      <div class="reveal">
+      <div>
         <p class="eyebrow">Opening hours</p>
         <div class="hours-list" id="hoursList"></div>
         <div class="notice" style="margin-top:2.25rem" data-clinic="policy.cancellation"></div>
@@ -197,13 +328,13 @@
 <!-- ============ AREAS (internal links to the SEO pages) ============ -->
 <section class="section" id="areas">
   <div class="wrap">
-    <div class="reveal" style="margin-bottom:2.75rem">
+    <div style="margin-bottom:2.75rem">
       <p class="eyebrow">Where clients travel from</p>
       <h2>Treatments by area.</h2>
       <p class="lede" style="margin-top:1.2rem">Same clinic, same prices — these pages just cover
         getting here, and what to expect, from each part of east London.</p>
     </div>
-    <div class="areas reveal" id="areaLinks"></div>
+    <div class="areas" id="areaLinks"></div>
   </div>
 </section>
 
@@ -218,6 +349,7 @@
       <div class="foot__links">
         <a href="#treatments">Treatments</a>
         <a href="#aftercare">Aftercare</a>
+        <a href="#engine">The engine</a>
         <a href="#visit">Visit</a>
         <a data-clinic-href="social.instagram" target="_blank" rel="noopener">Instagram</a>
       </div>
@@ -367,6 +499,7 @@
 
 <script src="config.js"></script>
 <script src="treatments.js"></script>
+<script src="automations.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
