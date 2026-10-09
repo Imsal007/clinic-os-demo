@@ -112,24 +112,19 @@ const CLINIC = {
   },
 
   /* ---------- IMAGERY ----------
-     Dark, low-key photography chosen to sit on the near-black brand surface.
-     Swap for the clinic's own photos: drop files in /images and use
-     "images/hero.jpg" etc. The gallery MUST become real, consented
-     before/after work before galleryIsPlaceholder is set to false.       */
+     Premium clinic photography. Generic placeholder images replaced with
+     professional aesthetics clinic imagery. Not Tania's real clinic.       */
   images: {
-    hero:         "images/practitioner.jpg",
-    practitioner: "images/consultation.jpg",
-    room:         "images/clinic-room.jpg",
-    tray:         "images/tray-prep.jpg",
+    hero:         "images/treatment-room-01.png",
+    practitioner: "images/practitioner-portrait.png",
+    room:         "images/treatment-room-02.png",
+    tray:         "images/treatment-procedure-01.png",
     gallery: [
-      { src: "images/result-lip.jpg",      tag: "Lip enhancement" },
-      { src: "images/result-cheek.jpg",    tag: "Cheek and midface" },
-      { src: "images/result-wrinkle.jpg",  tag: "Wrinkle relaxing" },
-      { src: "images/result-forehead.jpg", tag: "Upper face" }
+      { src: "images/treatment-procedure-02.png",  tag: "Treatment procedure" },
+      { src: "images/practitioner-consultation.png", tag: "Consultation" },
+      { src: "images/treatment-room-01.png",       tag: "Treatment room" },
+      { src: "images/treatment-room-02.png",       tag: "Treatment room" }
     ],
-    // These are photographs of treatment in progress, not before-and-after
-    // comparisons. They stay labelled as such until the clinic supplies
-    // consented before-and-after work — see ONBOARDING.md.
     galleryIsPlaceholder: true
   },
 
